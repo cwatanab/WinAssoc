@@ -1,0 +1,46 @@
+# winassoc 設定例 — %APPDATA%\winassoc\config.toml に置く
+# ルールは上から順に評価し、最初に一致したものを採用 (first-match wins)。
+# どれにも一致しなければ default、それもなければピッカー表示。
+
+# ── アプリ定義 ──────────────────────────
+[apps.vscode]
+cmd  = '%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe'
+args = ['{target}']
+
+[apps.obsidian]
+cmd = '%LOCALAPPDATA%\Obsidian\Obsidian.exe'
+
+[apps.chrome-work]
+cmd   = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+args  = ['--profile-directory=Profile 1', '{target}']
+label = "Profile 1"
+
+[apps.firefox-personal]
+cmd   = 'C:\Program Files\Mozilla Firefox\firefox.exe'
+args  = ['-P', 'personal', '{target}']
+label = "personal"
+
+# ── 拡張子ルーティング ──────────────────
+[ext.md]
+default = "obsidian"
+rules = [
+  { glob = 'D:/Develop/**', app = "vscode" },   # 開発ツリー配下はエディタ
+  { modifier = "shift", app = "vscode" },       # Shift+ダブルクリックでもエディタ
+]
+
+[ext.html]
+default = "firefox-personal"
+rules = [
+  { modifier = "ctrl", pick = true },           # Ctrl 押下時はピッカー
+]
+
+# ── プロトコルルーティング ────────────────
+[protocol.https]
+default = "firefox-personal"
+rules = [
+  { host = '*.corp.example.com', app = "chrome-work" },
+  { url = 'https://github.com/myorg/**', app = "chrome-work" },
+]
+
+[protocol.http]
+default = "firefox-personal"
