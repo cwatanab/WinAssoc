@@ -1,0 +1,16 @@
+# 統合テスト用の使い捨て設定 (実際の関連付けに影響しない拡張子/プロトコルのみ)
+[apps.cmdexit]
+cmd  = 'C:\Windows\System32\cmd.exe'
+args = ['/c', 'exit']
+
+[apps.notepad]
+cmd = 'C:\Windows\System32\notepad.exe'
+
+[ext.winassoctest]
+default = "cmdexit"
+rules = [
+  { glob = 'D:/Develop/**', app = "cmdexit" },
+]
+
+[protocol.winassoctest]
+default = "cmdexit"

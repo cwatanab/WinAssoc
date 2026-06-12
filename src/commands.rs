@@ -1,30 +1,77 @@
 use anyhow::{bail, Context, Result};
 
-use crate::config::Config;
+use crate::config::{expand_env, Config};
 use crate::engine::{build_command_line, evaluate, Decision, Modifiers, Target};
+use crate::{logging, picker};
 
 /// シム本体。OS のハンドラとして呼ばれ、評価結果のアプリを起動する
 pub fn open(config: &Config, raw_target: &str) -> Result<()> {
     let target = Target::parse(raw_target);
     let mods = current_modifiers();
     match evaluate(config, &target, &mods) {
-        Decision::Launch { app, .. } => {
-            let def = &config.apps[&app];
-            let (program, args) = build_command_line(def, target.raw());
-            std::process::Command::new(&program)
-                .args(&args)
-                .spawn()
-                .with_context(|| format!("起動に失敗しました: {program}"))?;
-            Ok(())
+        Decision::Launch { app, rule_index } => {
+            let matched = match rule_index {
+                Some(i) => format!("rule#{}", i + 1),
+                None => "default".to_string(),
+            };
+            launch(config, &app, target.raw(), &matched)
         }
         Decision::Pick { candidates, .. } => {
-            // TODO(M3): ランチャー UI (SPEC 6.5)。実装までは候補を提示して終了する
-            bail!(
-                "ピッカー UI は未実装です。候補: {}",
-                if candidates.is_empty() { "(なし)".to_string() } else { candidates.join(", ") }
-            )
+            let entries = candidates
+                .iter()
+                .map(|name| {
+                    let def = &config.apps[name];
+                    picker::Candidate {
+                        name: name.clone(),
+                        label: def.label.clone(),
+                        program: expand_env(&def.cmd),
+                    }
+                })
+                .collect();
+            match picker::show(target_label(&target), entries)? {
+                Some(app) => launch(config, &app, target.raw(), "picker"),
+                None => {
+                    logging::log_launch(target.raw(), "picker", "-", "cancelled");
+                    Ok(())
+                }
+            }
         }
-        Decision::NoRoute { reason } => bail!("ルートがありません: {reason}"),
+        Decision::NoRoute { reason } => {
+            logging::log_launch(target.raw(), "-", "-", "no-route");
+            bail!("ルートがありません: {reason}")
+        }
+    }
+}
+
+fn launch(config: &Config, app: &str, target: &str, matched: &str) -> Result<()> {
+    let (program, args) = build_command_line(&config.apps[app], target);
+    let result = std::process::Command::new(&program).args(&args).spawn();
+    match result {
+        Ok(_) => {
+            logging::log_launch(target, matched, app, "ok");
+            Ok(())
+        }
+        Err(e) => {
+            logging::log_launch(target, matched, app, &format!("error: {e}"));
+            Err(e).with_context(|| format!("起動に失敗しました: {program}"))
+        }
+    }
+}
+
+/// ピッカーのタイトルに出す短い表示名 (ファイル名 or 短縮 URL)
+fn target_label(target: &Target) -> String {
+    let label = match target {
+        Target::File { path, .. } => std::path::Path::new(path)
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| path.clone()),
+        Target::Url { url, .. } => url.clone(),
+    };
+    if label.chars().count() > 48 {
+        let head: String = label.chars().take(45).collect();
+        format!("{head}…")
+    } else {
+        label
     }
 }
 
@@ -56,12 +103,12 @@ pub fn test(config: &Config, raw_target: &str, modifier_names: &[String]) -> Res
             let (program, args) = build_command_line(&config.apps[&app], target.raw());
             println!("起動: \"{program}\" {}", quote_args(&args));
         }
-        Decision::Pick { candidates, rule_index } => {
-            println!("判定: ルール #{} に一致 → ピッカー表示", rule_index + 1);
-            println!(
-                "候補: {}",
-                if candidates.is_empty() { "(なし)".to_string() } else { candidates.join(", ") }
-            );
+        Decision::Pick { candidates, rule_index, reason } => {
+            match rule_index {
+                Some(i) => println!("判定: ルール #{} に一致 → ピッカー表示", i + 1),
+                None => println!("判定: ピッカー表示 ({reason})"),
+            }
+            println!("候補: {}", candidates.join(", "));
         }
         Decision::NoRoute { reason } => println!("判定: ルートなし ({reason})"),
     }
@@ -104,7 +151,7 @@ pub fn list(config: &Config) -> Result<()> {
             }
             match &table.default {
                 Some(app) => println!("    default → {app}"),
-                None => println!("    default → (なし)"),
+                None => println!("    default → (なし → ピッカー)"),
             }
         }
     }
@@ -116,6 +163,26 @@ fn quote_args(args: &[String]) -> String {
         .map(|a| if a.contains(' ') { format!("\"{a}\"") } else { a.clone() })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+/// シェル起動時 (コンソールなし) のエラー通知ダイアログ (SPEC 6)
+#[cfg(windows)]
+pub fn show_error_dialog(message: &str) {
+    use windows::core::HSTRING;
+    use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+    unsafe {
+        MessageBoxW(
+            None,
+            &HSTRING::from(message),
+            &HSTRING::from("winassoc"),
+            MB_OK | MB_ICONERROR,
+        );
+    }
+}
+
+#[cfg(not(windows))]
+pub fn show_error_dialog(message: &str) {
+    eprintln!("{message}");
 }
 
 /// 起動時点の修飾キー押下状態 (SPEC 6: GetAsyncKeyState)

@@ -89,34 +89,44 @@ impl Target {
 pub enum Decision {
     /// ルール一致 (rule_index = Some) またはフォールバック default (None)
     Launch { app: String, rule_index: Option<usize> },
-    /// pick = true ルールに一致。候補はテーブル内に登場するアプリ
-    Pick { candidates: Vec<String>, rule_index: usize },
+    /// pick ルール一致 (rule_index = Some)、またはルート/default 未定義のフォールバック (None)
+    Pick { candidates: Vec<String>, rule_index: Option<usize>, reason: String },
+    /// [apps] が空で何も起動できない
     NoRoute { reason: String },
 }
 
 pub fn evaluate(config: &Config, target: &Target, mods: &Modifiers) -> Decision {
+    if config.apps.is_empty() {
+        return Decision::NoRoute { reason: "[apps] が 1 つも定義されていません".to_string() };
+    }
+
     let Some((table_name, table)) = target.route_table(config) else {
-        return Decision::NoRoute {
-            reason: match target {
-                Target::File { ext: Some(ext), .. } => format!("[ext.{ext}] が未定義です"),
-                Target::File { ext: None, .. } => "拡張子のないファイルです".to_string(),
-                Target::Url { scheme, .. } => format!("[protocol.{scheme}] が未定義です"),
-            },
+        let reason = match target {
+            Target::File { ext: Some(ext), .. } => format!("[ext.{ext}] が未定義です"),
+            Target::File { ext: None, .. } => "拡張子のないファイルです".to_string(),
+            Target::Url { scheme, .. } => format!("[protocol.{scheme}] が未定義です"),
         };
+        return Decision::Pick { candidates: all_apps(config), rule_index: None, reason };
     };
 
     for (i, rule) in table.rules.iter().enumerate() {
         if rule_matches(rule, target, mods) {
             return match &rule.app {
                 Some(app) => Decision::Launch { app: app.clone(), rule_index: Some(i) },
-                None => Decision::Pick { candidates: pick_candidates(table), rule_index: i },
+                None => Decision::Pick {
+                    candidates: candidates_or_all(config, table),
+                    rule_index: Some(i),
+                    reason: format!("[{table_name}] rules[{i}] の pick 指定", i = i + 1),
+                },
             };
         }
     }
 
     match &table.default {
         Some(app) => Decision::Launch { app: app.clone(), rule_index: None },
-        None => Decision::NoRoute {
+        None => Decision::Pick {
+            candidates: candidates_or_all(config, table),
+            rule_index: None,
             reason: format!("[{table_name}] にルール一致がなく default も未指定です"),
         },
     }
@@ -157,6 +167,20 @@ fn glob_match(pattern: &str, text: &str) -> bool {
         .build()
         .map(|g| g.compile_matcher().is_match(text))
         .unwrap_or(false)
+}
+
+fn all_apps(config: &Config) -> Vec<String> {
+    config.apps.keys().cloned().collect()
+}
+
+/// テーブル内候補。空なら全アプリにフォールバック
+fn candidates_or_all(config: &Config, table: &RouteTable) -> Vec<String> {
+    let candidates = pick_candidates(table);
+    if candidates.is_empty() {
+        all_apps(config)
+    } else {
+        candidates
+    }
 }
 
 /// pick 時の候補: テーブル内に登場する順で default + 各ルールの app (重複除去)
@@ -294,32 +318,46 @@ mod tests {
     }
 
     #[test]
-    fn pick_rule_collects_candidates() {
+    fn pick_rule_falls_back_to_all_apps_when_table_has_no_refs() {
         let target = Target::parse(r"C:\site\index.html");
         let mods = Modifiers { ctrl: true, ..Default::default() };
         match evaluate(&config(), &target, &mods) {
-            Decision::Pick { candidates, rule_index } => {
-                assert_eq!(rule_index, 0);
-                assert!(candidates.is_empty()); // テーブルに app 参照がないため
+            Decision::Pick { candidates, rule_index, .. } => {
+                assert_eq!(rule_index, Some(0));
+                // ext.html テーブルに app 参照がないため全アプリが候補になる
+                assert_eq!(candidates.len(), 4);
             }
             other => panic!("Pick を期待: {other:?}"),
         }
     }
 
     #[test]
-    fn no_route_for_unknown_extension() {
+    fn unknown_extension_falls_back_to_pick_all_apps() {
         let target = Target::parse(r"C:\a.xyz");
+        match evaluate(&config(), &target, &Modifiers::default()) {
+            Decision::Pick { candidates, rule_index, .. } => {
+                assert_eq!(rule_index, None);
+                assert_eq!(candidates.len(), 4);
+            }
+            other => panic!("Pick を期待: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn no_match_without_default_falls_back_to_pick() {
+        let target = Target::parse(r"C:\site\index.html");
         assert!(matches!(
             evaluate(&config(), &target, &Modifiers::default()),
-            Decision::NoRoute { .. }
+            Decision::Pick { rule_index: None, .. }
         ));
     }
 
     #[test]
-    fn no_modifier_falls_through_pick_to_no_route() {
-        let target = Target::parse(r"C:\site\index.html");
+    fn empty_apps_is_no_route() {
+        let config: Config = toml::from_str("").unwrap();
+        let target = Target::parse(r"C:\a.md");
         assert!(matches!(
-            evaluate(&config(), &target, &Modifiers::default()),
+            evaluate(&config, &target, &Modifiers::default()),
             Decision::NoRoute { .. }
         ));
     }

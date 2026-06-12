@@ -83,11 +83,14 @@ default = "outlook"
 
 ## 4. CLI コマンド体系
 
-単一バイナリ `winassoc.exe`。シム起動もサブコマンドで兼ねる。
+2 バイナリ構成（同一 crate からビルド）:
+
+- `winassoc.exe` — CLI (console subsystem)。管理・デバッグ用
+- `winassoc-open.exe` — **シム本体** (GUI subsystem)。OS のハンドラとして登録され、コンソールを出さずに起動する。エラーはダイアログ + ログで通知
 
 | コマンド | 役割 |
 |---|---|
-| `winassoc open <path\|url>` | **シム本体**。エクスプローラ/OS から呼ばれるエントリポイント。ルール評価して起動 |
+| `winassoc open <path\|url>` | シムと同じ評価を CLI から実行 (デバッグ用) |
 | `winassoc apply` | 設定中の拡張子・プロトコルの ProgID/ハンドラ登録を HKCU に書き込み（冪等） |
 | `winassoc unregister [ext\|all]` | 登録解除 |
 | `winassoc list` | 設定済みルートと現在のレジストリ登録状態を一覧 |
@@ -98,7 +101,7 @@ default = "outlook"
 
 ## 5. レジストリ登録方式（HKCU）
 
-- **ProgID**: `HKCU\Software\Classes\WinAssoc.<ext>` を作成し、`shell\open\command` に `"...\winassoc.exe" open "%1"` を設定。`HKCU\Software\Classes\.<ext>\OpenWithProgids` に追加。
+- **ProgID**: `HKCU\Software\Classes\WinAssoc.<ext>` を作成し、`shell\open\command` に `"...\winassoc-open.exe" "%1"` を設定。`HKCU\Software\Classes\.<ext>` の既定値と `OpenWithProgids` に追加（既定値の元の内容は backup に保存し、unregister で復元）。
 - **プロトコル**: 未登録スキームは `HKCU\Software\Classes\<scheme>`（`URL Protocol`）として直接登録。
 - **既定ブラウザ**: `HKCU\Software\Clients\StartMenuInternet\WinAssoc` + `RegisteredApplications` に Capabilities（http/https/.html 等）を登録。
 - **UserChoice の制約**: UserChoice ハッシュは偽造しない。`apply` 後、既定アプリの最終確定が必要なものは `ms-settings:defaultapps` を開いてユーザーに 1 クリックしてもらう（doctor が未確定項目を検出して案内）。
@@ -144,8 +147,8 @@ default = "outlook"
 
 ### アプリアイコン取得
 
-- 各アプリ定義の `cmd` の exe から `IShellItemImageFactory`（高 DPI 対応、48〜64px）で抽出。取得失敗時は頭文字のジェネリックタイルにフォールバック。
-- 抽出結果は `%LOCALAPPDATA%\winassoc\cache\icons\` にキャッシュし、ピッカー起動を高速化（exe の更新日時で無効化）。
+- 各アプリ定義の `cmd` の exe から `IShellItemImageFactory`（64px、`SIIGBF_ICONONLY`）で抽出。取得失敗時は頭文字のジェネリックタイルにフォールバック。
+- 抽出は数 ms/個と十分高速なためディスクキャッシュは設けない（レイテンシ目標を割る場合に将来導入）。
 
 ## 7. 技術スタック（案）
 
@@ -154,7 +157,7 @@ default = "outlook"
 - 設定: `toml` + `serde`
 - glob: `globset`
 - ログ: `tracing` + ファイルローテーション
-- ピッカー UI: `egui` (`eframe` + glow バックエンド) + `window-vibrancy`（Mica/Acrylic 適用）を第一候補。即時モード GUI なのでアニメーションが書きやすく、起動も軽い。レイテンシ目標 (<150ms) を満たせない場合は Win32 + Direct2D/DirectComposition の手書き実装に切り替える
+- ピッカー UI: `eframe` (egui)。Mica/Acrylic は追加クレートなしで `DwmSetWindowAttribute` を直接呼んで適用。CJK グリフのためシステムフォント (Yu Gothic 等) を実行時にロード
 - アイコン抽出: `windows` crate 経由の `IShellItemImageFactory`
 
 ## 8. 未決事項

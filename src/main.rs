@@ -1,13 +1,10 @@
-mod commands;
-mod config;
-mod engine;
-
 use std::path::PathBuf;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use config::Config;
+use winassoc::config::{self, Config};
+use winassoc::{commands, logging, registry};
 
 #[derive(Parser)]
 #[command(name = "winassoc", version, about = "Windows のファイル関連付け/URL をルールベースでルーティングするシム")]
@@ -31,20 +28,24 @@ enum Command {
         #[arg(long, value_delimiter = ',')]
         modifier: Vec<String>,
     },
-    /// 設定済みルートと登録状態の一覧
+    /// 設定済みルートの一覧
     List,
-    /// 設定中の拡張子/プロトコルを HKCU に登録する
+    /// 設定中の拡張子/プロトコルを HKCU に登録する (実行前に自動バックアップ)
     Apply,
-    /// 登録解除
+    /// 登録解除 (バックアップがあれば既定 ProgID を復元)
     Unregister,
     /// 設定とレジストリの乖離を診断する
     Doctor,
     /// 起動ログの表示
-    Log,
-    /// 関連付け状態のバックアップ
+    Log {
+        /// 末尾から表示する行数
+        #[arg(long, default_value_t = 20)]
+        tail: usize,
+    },
+    /// 現在の関連付け状態をバックアップする
     Backup,
-    /// バックアップからの復元
-    Restore,
+    /// バックアップから関連付けを復元する (省略時: 最新)
+    Restore { file: Option<PathBuf> },
 }
 
 fn main() -> Result<()> {
@@ -53,17 +54,28 @@ fn main() -> Result<()> {
         Some(path) => path,
         None => config::default_config_path()?,
     };
-    let config = Config::load(&config_path)?;
 
+    // log だけは設定ファイルなしでも動かす
+    if let Command::Log { tail } = &cli.command {
+        return logging::tail(*tail);
+    }
+    if let Command::Restore { file } = &cli.command {
+        return registry::restore(file.as_deref());
+    }
+
+    let config = Config::load(&config_path)?;
     match cli.command {
         Command::Open { target } => commands::open(&config, &target),
         Command::Test { target, modifier } => commands::test(&config, &target, &modifier),
         Command::List => commands::list(&config),
-        Command::Apply | Command::Unregister | Command::Doctor => {
-            bail!("このコマンドは未実装です (M2: レジストリ登録で対応予定)")
+        Command::Apply => registry::apply(&config),
+        Command::Unregister => registry::unregister(&config),
+        Command::Doctor => registry::doctor(&config, &config_path),
+        Command::Backup => {
+            let path = registry::backup(&config)?;
+            println!("バックアップを保存しました: {}", path.display());
+            Ok(())
         }
-        Command::Log | Command::Backup | Command::Restore => {
-            bail!("このコマンドは未実装です (M4: 運用機能で対応予定)")
-        }
+        Command::Log { .. } | Command::Restore { .. } => unreachable!(),
     }
 }
