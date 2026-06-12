@@ -54,6 +54,19 @@ pub fn default_config_path() -> Result<PathBuf> {
     Ok(base.join("winassoc").join("config.toml"))
 }
 
+/// 設定ファイルの探索順 (--config 未指定時):
+/// 1. exe と同じディレクトリの config.toml (ポータブル運用)
+/// 2. %APPDATA%\winassoc\config.toml
+pub fn resolve_config_path() -> Result<PathBuf> {
+    if let Ok(exe) = std::env::current_exe() {
+        let portable = exe.with_file_name("config.toml");
+        if portable.exists() {
+            return Ok(portable);
+        }
+    }
+    default_config_path()
+}
+
 impl Config {
     pub fn load(path: &Path) -> Result<Config> {
         let text = std::fs::read_to_string(path)

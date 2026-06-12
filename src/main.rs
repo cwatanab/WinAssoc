@@ -52,7 +52,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     let config_path = match cli.config {
         Some(path) => path,
-        None => config::default_config_path()?,
+        None => config::resolve_config_path()?,
     };
 
     // log だけは設定ファイルなしでも動かす

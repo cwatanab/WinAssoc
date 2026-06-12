@@ -12,7 +12,7 @@ fn main() {
         std::process::exit(2);
     };
 
-    let result = config::default_config_path()
+    let result = config::resolve_config_path()
         .and_then(|path| Config::load(&path))
         .and_then(|config| commands::open(&config, &target));
 

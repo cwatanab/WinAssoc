@@ -20,6 +20,8 @@ cargo build --release
 
 ## クイックスタート
 
+設定ファイルの探索順: `--config` 指定 → **exe と同じディレクトリの `config.toml`**（ポータブル運用）→ `%APPDATA%\winassoc\config.toml`
+
 ```powershell
 # 1. 設定を書く
 notepad $env:APPDATA\winassoc\config.toml   # 例は config.example.toml
