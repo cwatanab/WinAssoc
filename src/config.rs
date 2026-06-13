@@ -75,17 +75,32 @@ pub struct Rule {
 
 pub fn default_config_path() -> Result<PathBuf> {
     let base = dirs::config_dir().context("%APPDATA% を特定できません")?;
-    Ok(base.join("winassoc").join("config.toml"))
+    let p1 = base.join("winassoc").join("winassoc.toml");
+    if p1.exists() {
+        return Ok(p1);
+    }
+    let p2 = base.join("winassoc").join("config.toml");
+    if p2.exists() {
+        return Ok(p2);
+    }
+    // どちらも存在しない場合のデフォルトは winassoc.toml とする
+    Ok(p1)
 }
 
 /// 設定ファイルの探索順 (--config 未指定時):
-/// 1. exe と同じディレクトリの config.toml (ポータブル運用)
-/// 2. %APPDATA%\winassoc\config.toml
+/// 1. exe と同じディレクトリの winassoc.toml (ポータブル運用)
+/// 2. exe と同じディレクトリの config.toml (ポータブル運用)
+/// 3. %APPDATA%\winassoc\winassoc.toml
+/// 4. %APPDATA%\winassoc\config.toml
 pub fn resolve_config_path() -> Result<PathBuf> {
     if let Ok(exe) = std::env::current_exe() {
-        let portable = exe.with_file_name("config.toml");
-        if portable.exists() {
-            return Ok(portable);
+        let portable1 = exe.with_file_name("winassoc.toml");
+        if portable1.exists() {
+            return Ok(portable1);
+        }
+        let portable2 = exe.with_file_name("config.toml");
+        if portable2.exists() {
+            return Ok(portable2);
         }
     }
     default_config_path()

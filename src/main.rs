@@ -9,7 +9,7 @@ use winassoc::{commands, logging, registry};
 #[derive(Parser)]
 #[command(name = "winassoc", version, about = "Windows のファイル関連付け/URL をルールベースでルーティングするシム")]
 struct Cli {
-    /// 設定ファイル (既定: %APPDATA%\winassoc\config.toml)
+    /// 設定ファイル (既定: winassoc.toml または config.toml)
     #[arg(long, global = true)]
     config: Option<PathBuf>,
 
