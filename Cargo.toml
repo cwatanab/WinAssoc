@@ -34,7 +34,8 @@ features = [
 winres = "0.1"
 
 [profile.release]
-# シムは起動レイテンシ最優先 (SPEC 6)
-opt-level = 3
+opt-level = "z"
 lto = true
 strip = true
+panic = "abort"
+codegen-units = 1
