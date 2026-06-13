@@ -3827,7 +3827,6 @@ dependencies = [
  "raw-window-handle",
  "serde",
  "toml 0.8.23",
- "url",
  "windows 0.61.3",
  "winreg",
  "winres",

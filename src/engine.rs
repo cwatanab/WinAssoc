@@ -43,20 +43,33 @@ pub enum Target {
     Url { url: String, scheme: String, host: Option<String> },
 }
 
+fn parse_url(input: &str) -> Option<(String, String, Option<String>)> {
+    let scheme_end = input.find("://")?;
+    let scheme = &input[..scheme_end];
+    if scheme.is_empty() || !scheme.starts_with(|c: char| c.is_ascii_alphabetic()) {
+        return None;
+    }
+    if !scheme.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.')) {
+        return None;
+    }
+    let rest = &input[scheme_end + 3..];
+    let host = rest
+        .split(&['/', '?', '#'])
+        .next()
+        .filter(|h| !h.is_empty())
+        .map(str::to_string);
+    Some((scheme.to_ascii_lowercase(), input.to_string(), host))
+}
+
 impl Target {
     pub fn parse(input: &str) -> Target {
-        // "C:\..." / "C:/..." はドライブレターであって URL スキームではない
         let looks_like_drive = input.len() >= 2
             && input.as_bytes()[1] == b':'
             && input.as_bytes()[0].is_ascii_alphabetic()
             && matches!(input.as_bytes().get(2), None | Some(b'\\') | Some(b'/'));
         if !looks_like_drive {
-            if let Ok(parsed) = url::Url::parse(input) {
-                return Target::Url {
-                    url: input.to_string(),
-                    scheme: parsed.scheme().to_ascii_lowercase(),
-                    host: parsed.host_str().map(str::to_string),
-                };
+            if let Some((scheme, url, host)) = parse_url(input) {
+                return Target::Url { url, scheme, host };
             }
         }
         let ext = std::path::Path::new(input)
