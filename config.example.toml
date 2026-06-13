@@ -1,54 +1,136 @@
-# winassoc 設定例 — %APPDATA%\winassoc\config.toml に置く
-# ルールは上から順に評価し、最初に一致したものを採用 (first-match wins)。
-# どれにも一致しなければ default、それもなければピッカー表示。
+# winassoc 設定ファイル例 — %APPDATA%\winassoc\config.toml に置いて使用します。
+# 
+# 動作フロー:
+# 1. ダブルクリックなどで起動されたファイルの拡張子（またはプロトコル）のテーブルを読み込みます。
+# 2. rules を上から順に評価し、最初に条件（glob/modifier 等）が一致したルールを採用します。
+# 3. ルールが一致しなかった場合、default アプリで開きます。
+# 4. default も指定されていない場合、またはルールで pick = true に一致した場合はピッカーを表示します。
+
+# ── 一般設定 ──────────────────────────
+[settings]
+# 未フォーカス起動時のピッカー自動終了タイムアウト（ミリ秒, デフォルト: 5000）
+# 起動後にマウスホバーもOSフォーカスもない状態がこの時間続くと、自動でピッカーを閉じます。
+picker_timeout_ms = 5000
+
 
 # ── アプリ定義 ──────────────────────────
-[apps.vscode]
-cmd  = '%LOCALAPPDATA%\Programs\Microsoft VS Code\Code.exe'
+# 任意のキー名でアプリを定義します。cmd と args を設定します。
+# - cmd : 実行ファイルの絶対パス、または環境変数（例：%LOCALAPPDATA%）を含んだパスを指定できます。
+# - args: 引数のリスト。{target} 部分が開こうとしたファイルパスやURLに置換されます。
+# - label: ピッカー画面でアプリ名の下に表示される補助ラベル（省略可能）。
+
+[apps.markpad]
+cmd  = 'C:\Program Files\MarkPad\MarkPad.exe'
 args = ['{target}']
 
-[apps.obsidian]
-cmd = '%LOCALAPPDATA%\Obsidian\Obsidian.exe'
+[apps.vscode]
+cmd  = 'C:\Program Files\Microsoft VS Code\Code.exe'
+args = ['{target}']
 
-[apps.chrome-work]
+[apps.zed]
+cmd  = '%LOCALAPPDATA%\Programs\Zed\zed.exe'
+args = ['{target}']
+
+[apps.hidemaru]
+cmd  = 'C:\Program Files\Hidemaru\Hidemaru.exe'
+args = ['{target}'] 
+
+[apps.vivaldi]
+cmd  = 'C:\Program Files\Vivaldi\Application\vivaldi.exe'
+args = ['{target}']
+
+[apps.brave]
+cmd  = 'C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe'
+args = ['{target}']
+
+[apps.firefox]
+cmd  = 'C:\Program Files\Mozilla Firefox\firefox.exe'
+args = ['{target}']
+
+[apps.chrome]
+cmd  = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+args = ['{target}']
+
+[apps.chrome-incognito]
 cmd   = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
-args  = ['--profile-directory=Profile 1', '{target}']
-label = "Profile 1"
+args  = ['--incognito', '{target}']
+label = "シークレットモード"
 
-[apps.firefox-personal]
-cmd   = 'C:\Program Files\Mozilla Firefox\firefox.exe'
-args  = ['-P', 'personal', '{target}']
-label = "personal"
+[apps.msedge]
+cmd  = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+args = ['{target}']
+
+[apps.drawio]
+cmd  = 'C:\Program Files\draw.io\draw.io.exe'
+args = ['--enable-plugins', '{target}'] 
+
+[apps.sumatrapdf]
+cmd  = 'C:\Program Files\SumatraPDF\SumatraPDF.exe'
+args = ['{target}'] 
+
+[apps.pdfelement]
+cmd  = 'C:\Program Files\Wondershare\Wondershare PDFelement for Windows (日本語)\PDFelement.exe'
+args = ['{target}'] 
+
 
 # ── 拡張子ルーティング ──────────────────
+# [ext.拡張子] の形式で記述します。
+# - default: 条件に合致しなかった場合の規定のアプリ名。
+# - candidates: ピッカー表示時の候補アプリのリスト。
+# - rules: 上から順に評価されるルーティングルール。
+#   - modifier: shift, ctrl, alt のいずれか。押下しながらダブルクリックした際にマッチ。
+#   - glob: ファイルパスに対するワイルドカードマッチ。
+#   - app: マッチしたときに起動するアプリ名。
+#   - pick = true: マッチしたときにピッカー（選択画面）を表示。
+
 [ext.md]
-default = "obsidian"
+default = "markpad"
+candidates = ["markpad", "zed", "vscode"]
 rules = [
-  { glob = 'D:/Develop/**', app = "vscode" },   # 開発ツリー配下はエディタ
-  { modifier = "shift", app = "vscode" },       # Shift+ダブルクリックでもエディタ
+  # Shiftキーを押しながら開いた場合は、ピッカー（candidates から選択）を表示
+  { modifier = "shift", pick = true },
+]
+
+[ext.svg]
+default = "msedge"
+candidates = ["msedge", "drawio"]
+rules = [
+  # ファイル名が .drawio.svg で終わる場合は、通常のブラウザではなく直接 draw.io アプリで起動
+  { glob = "**/*.drawio.svg", app = "drawio" },
+  # Shiftキーを押しながら開いた場合は、ピッカーを表示
+  { modifier = "shift", pick = true }
+]
+
+[ext.pdf]
+default = "sumatrapdf"
+candidates = ["sumatrapdf", "pdfelement", "msedge"]
+rules = [
+  { modifier = "shift", pick = true }
+]
+
+[ext.txt]
+default = "hidemaru"
+candidates = ["hidemaru", "vscode", "zed"]
+rules = [
+  { modifier = "shift", pick = true }
 ]
 
 [ext.html]
-default = "firefox-personal"
-# ピッカー表示時の候補アプリを明示的に指定 (省略時は default + rules 内に登場するアプリが自動候補になります)
-candidates = ["chrome-work", "firefox-personal"]
+default = "vivaldi"
+candidates = ["vivaldi", "brave", "firefox", "chrome", "chrome-incognito"]
 rules = [
-  { modifier = "ctrl", pick = true },           # Ctrl 押下時はピッカー
+  { modifier = "shift", pick = true }
 ]
 
 # ── プロトコルルーティング ────────────────
+# [protocol.スキーム] の形式で記述します。http/https や mailto 等が指定できます。
+# - host: ホスト名に対するワイルドカードマッチ（例: *.corp.example.com）。
+# - url: URL全体に対するワイルドカードマッチ。
+
 [protocol.https]
-default = "firefox-personal"
+default = "vivaldi"
+candidates = ["vivaldi", "brave", "firefox", "chrome", "chrome-incognito"]
 rules = [
-  { host = '*.corp.example.com', app = "chrome-work" },
-  { url = 'https://github.com/myorg/**', app = "chrome-work" },
+  # Shiftキーを押しながらリンクを開いた場合は、開くブラウザを選択するピッカーを表示
+  { modifier = "shift", pick = true }  
 ]
-
-[protocol.http]
-default = "firefox-personal"
-
-# ── その他設定 ──────────────────────────
-[settings]
-# 未フォーカス起動時のピッカー自動終了タイムアウト (ミリ秒, デフォルト: 5000)
-# picker_timeout_ms = 5000
-
