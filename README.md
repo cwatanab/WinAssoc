@@ -1,6 +1,7 @@
 # winassoc
 
-![winassoc picker](sreenshot.png)
+![winassoc picker (HTML)](docs/sreenshot-html.png)
+![winassoc picker (SVG)](docs/screeshot-svg.png)
 
 Windows のファイル関連付け（拡張子）と URL プロトコルを、ルールベースで柔軟にルーティングするツール。
 詳細仕様は [SPEC.md](SPEC.md) を参照。
