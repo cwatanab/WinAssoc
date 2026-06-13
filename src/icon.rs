@@ -7,17 +7,9 @@ use windows::Win32::Graphics::Gdi::{
     DeleteObject, GetDC, GetDIBits, ReleaseDC, BITMAPINFO, BITMAPINFOHEADER, BI_RGB,
     DIB_RGB_COLORS,
 };
-use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED};
 use windows::Win32::UI::Shell::{
     SHCreateItemFromParsingName, IShellItemImageFactory, SIIGBF_BIGGERSIZEOK, SIIGBF_ICONONLY,
 };
-
-/// プロセスごとに一度だけ COM を初期化する
-pub fn init_com() {
-    unsafe {
-        let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
-    }
-}
 
 /// exe パスから RGBA (unmultiplied) のアイコン画像を抽出する。失敗時は None
 pub fn extract_icon_rgba(path: &str, size: i32) -> Option<egui::ColorImage> {

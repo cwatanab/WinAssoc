@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 use eframe::egui::{self, Color32, CornerRadius, FontId, Id, Margin, Pos2, Rect, RichText, Sense, Stroke, Vec2};
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
-use crate::icon;
+use crate::{icon, platform};
 
 const ICON_SIZE: i32 = 64;
 const TILE_W: f32 = 116.0;
@@ -32,7 +32,7 @@ pub fn show(target_label: String, candidates: Vec<Candidate>, timeout_ms: u64) -
     if candidates.is_empty() {
         return Ok(None);
     }
-    icon::init_com();
+    platform::init_com();
     let images: Vec<Option<egui::ColorImage>> = candidates
         .iter()
         .map(|c| icon::extract_icon_rgba(&c.program, ICON_SIZE))
@@ -44,7 +44,7 @@ pub fn show(target_label: String, candidates: Vec<Candidate>, timeout_ms: u64) -
     let height = OUTER_MARGIN * 2.0 + 60.0 + rows as f32 * TILE_H + (rows - 1) as f32 * TILE_GAP;
     let position = popup_position(width, height);
 
-    let dark = prefers_dark_theme();
+    let dark = platform::prefers_dark_theme();
     let (tx, rx) = mpsc::channel::<Option<String>>();
 
     let options = eframe::NativeOptions {
@@ -429,16 +429,6 @@ fn apply_window_effects(cc: &eframe::CreationContext<'_>, dark: bool) {
             std::mem::size_of::<BOOL>() as u32,
         );
     }
-}
-
-/// OS のアプリテーマ設定 (AppsUseLightTheme) を読む
-fn prefers_dark_theme() -> bool {
-    use winreg::enums::HKEY_CURRENT_USER;
-    winreg::RegKey::predef(HKEY_CURRENT_USER)
-        .open_subkey(r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
-        .and_then(|k| k.get_value::<u32, _>("AppsUseLightTheme"))
-        .map(|light| light == 0)
-        .unwrap_or(false)
 }
 
 /// マウスカーソル付近に表示し、モニタのワークエリア内にクランプ (SPEC 6.5)。

@@ -2,12 +2,12 @@ use anyhow::{bail, Context, Result};
 
 use crate::config::{expand_env, Config};
 use crate::engine::{build_command_line, evaluate, Decision, Modifiers, Target};
-use crate::{logging, picker};
+use crate::{logging, picker, platform};
 
 /// シム本体。OS のハンドラとして呼ばれ、評価結果のアプリを起動する
 pub fn open(config: &Config, raw_target: &str) -> Result<()> {
     let target = Target::parse(raw_target);
-    let mods = current_modifiers();
+    let mods = platform::current_modifiers();
     match evaluate(config, &target, &mods) {
         Decision::Launch { app, rule_index } => {
             let matched = match rule_index {
@@ -165,39 +165,4 @@ fn quote_args(args: &[String]) -> String {
         .join(" ")
 }
 
-/// シェル起動時 (コンソールなし) のエラー通知ダイアログ (SPEC 6)
-#[cfg(windows)]
-pub fn show_error_dialog(message: &str) {
-    use windows::core::HSTRING;
-    use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
-    unsafe {
-        MessageBoxW(
-            None,
-            &HSTRING::from(message),
-            &HSTRING::from("winassoc"),
-            MB_OK | MB_ICONERROR,
-        );
-    }
-}
 
-#[cfg(not(windows))]
-pub fn show_error_dialog(message: &str) {
-    eprintln!("{message}");
-}
-
-/// 起動時点の修飾キー押下状態 (SPEC 6: GetAsyncKeyState)
-#[cfg(windows)]
-fn current_modifiers() -> Modifiers {
-    use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_CONTROL, VK_MENU, VK_SHIFT};
-    let down = |vk: i32| unsafe { (GetAsyncKeyState(vk) as u16 & 0x8000) != 0 };
-    Modifiers {
-        shift: down(VK_SHIFT.0 as i32),
-        ctrl: down(VK_CONTROL.0 as i32),
-        alt: down(VK_MENU.0 as i32),
-    }
-}
-
-#[cfg(not(windows))]
-fn current_modifiers() -> Modifiers {
-    Modifiers::default()
-}

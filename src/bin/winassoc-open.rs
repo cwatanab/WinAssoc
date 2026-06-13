@@ -3,12 +3,12 @@
 #![windows_subsystem = "windows"]
 
 use winassoc::config::{self, Config};
-use winassoc::{commands, logging};
+use winassoc::{commands, logging, platform};
 
 fn main() {
     // 登録コマンドは `"winassoc-open.exe" "%1"` — 第 1 引数が対象
     let Some(target) = std::env::args().nth(1) else {
-        commands::show_error_dialog("起動対象が指定されていません");
+        platform::show_error_dialog("起動対象が指定されていません");
         std::process::exit(2);
     };
 
@@ -18,7 +18,7 @@ fn main() {
 
     if let Err(e) = result {
         logging::log_launch(&target, "-", "-", &format!("error: {e:#}"));
-        commands::show_error_dialog(&format!("{e:#}"));
+        platform::show_error_dialog(&format!("{e:#}"));
         std::process::exit(1);
     }
 }

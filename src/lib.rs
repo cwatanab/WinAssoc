@@ -4,4 +4,5 @@ pub mod engine;
 pub mod icon;
 pub mod logging;
 pub mod picker;
+pub mod platform;
 pub mod registry;
