@@ -175,6 +175,11 @@ fn all_apps(config: &Config) -> Vec<String> {
 
 /// テーブル内候補。空なら全アプリにフォールバック
 fn candidates_or_all(config: &Config, table: &RouteTable) -> Vec<String> {
+    if let Some(explicit_candidates) = &table.candidates {
+        if !explicit_candidates.is_empty() {
+            return explicit_candidates.clone();
+        }
+    }
     let candidates = pick_candidates(table);
     if candidates.is_empty() {
         all_apps(config)
@@ -368,5 +373,33 @@ mod tests {
         let (program, args) = build_command_line(&config.apps["chrome-work"], "https://x.example/");
         assert_eq!(program, "chrome.exe");
         assert_eq!(args, vec!["--profile-directory=Profile 1", "https://x.example/"]);
+    }
+
+    #[test]
+    fn pick_uses_explicit_candidates_when_configured() {
+        let text = r#"
+            [apps.vscode]
+            cmd = 'C:\Tools\Code.exe'
+            [apps.chrome]
+            cmd = 'chrome.exe'
+            [apps.firefox]
+            cmd = 'firefox.exe'
+
+            [ext.html]
+            candidates = ["chrome", "firefox"]
+            rules = [
+              { modifier = "ctrl", pick = true },
+            ]
+        "#;
+        let config: Config = toml::from_str(text).unwrap();
+        let target = Target::parse(r"C:\site\index.html");
+        let mods = Modifiers { ctrl: true, ..Default::default() };
+        match evaluate(&config, &target, &mods) {
+            Decision::Pick { candidates, rule_index, .. } => {
+                assert_eq!(rule_index, Some(0));
+                assert_eq!(candidates, vec!["chrome".to_string(), "firefox".to_string()]);
+            }
+            other => panic!("Pick を期待: {other:?}"),
+        }
     }
 }

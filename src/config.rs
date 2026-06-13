@@ -56,6 +56,8 @@ pub struct RouteTable {
     pub default: Option<String>,
     #[serde(default)]
     pub rules: Vec<Rule>,
+    #[serde(default)]
+    pub candidates: Option<Vec<String>>,
 }
 
 /// 条件キーは複数指定で AND。アクションは `app` か `pick` のどちらか一方
@@ -110,6 +112,13 @@ impl Config {
             if let Some(app) = &table.default {
                 if !self.apps.contains_key(app) {
                     bail!("[{name}] default の \"{app}\" が [apps] に定義されていません");
+                }
+            }
+            if let Some(candidates) = &table.candidates {
+                for app in candidates {
+                    if !self.apps.contains_key(app) {
+                        bail!("[{name}] candidates の \"{app}\" が [apps] に定義されていません");
+                    }
                 }
             }
             for (i, rule) in table.rules.iter().enumerate() {

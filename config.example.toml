@@ -30,6 +30,8 @@ rules = [
 
 [ext.html]
 default = "firefox-personal"
+# ピッカー表示時の候補アプリを明示的に指定 (省略時は default + rules 内に登場するアプリが自動候補になります)
+candidates = ["chrome-work", "firefox-personal"]
 rules = [
   { modifier = "ctrl", pick = true },           # Ctrl 押下時はピッカー
 ]
