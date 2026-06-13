@@ -44,3 +44,9 @@ rules = [
 
 [protocol.http]
 default = "firefox-personal"
+
+# ── その他設定 ──────────────────────────
+[settings]
+# 未フォーカス起動時のピッカー自動終了タイムアウト (ミリ秒, デフォルト: 5000)
+# picker_timeout_ms = 5000
+

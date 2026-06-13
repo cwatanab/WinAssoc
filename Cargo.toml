@@ -30,6 +30,9 @@ features = [
     "Win32_System_Com",
 ]
 
+[build-dependencies]
+winres = "0.1"
+
 [profile.release]
 # シムは起動レイテンシ最優先 (SPEC 6)
 opt-level = 3

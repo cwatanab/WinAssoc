@@ -13,6 +13,28 @@ pub struct Config {
     pub ext: BTreeMap<String, RouteTable>,
     #[serde(default)]
     pub protocol: BTreeMap<String, RouteTable>,
+    #[serde(default)]
+    pub settings: Settings,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Settings {
+    /// 未フォーカス起動時の自動終了タイムアウト時間 (ミリ秒)
+    #[serde(default = "default_picker_timeout_ms")]
+    pub picker_timeout_ms: u64,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            picker_timeout_ms: 5000,
+        }
+    }
+}
+
+fn default_picker_timeout_ms() -> u64 {
+    5000
 }
 
 #[derive(Debug, Deserialize)]

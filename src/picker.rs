@@ -12,8 +12,8 @@ use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use crate::icon;
 
 const ICON_SIZE: i32 = 64;
-const TILE_W: f32 = 104.0;
-const TILE_H: f32 = 136.0;
+const TILE_W: f32 = 116.0;
+const TILE_H: f32 = 140.0;
 const TILE_GAP: f32 = 12.0;
 const OUTER_MARGIN: f32 = 18.0;
 const MAX_COLS: usize = 6;
@@ -28,7 +28,7 @@ pub struct Candidate {
 }
 
 /// ピッカーを表示し、選ばれたアプリ名を返す (None = キャンセル)
-pub fn show(target_label: String, candidates: Vec<Candidate>) -> Result<Option<String>> {
+pub fn show(target_label: String, candidates: Vec<Candidate>, timeout_ms: u64) -> Result<Option<String>> {
     if candidates.is_empty() {
         return Ok(None);
     }
@@ -41,7 +41,7 @@ pub fn show(target_label: String, candidates: Vec<Candidate>) -> Result<Option<S
     let cols = candidates.len().min(MAX_COLS);
     let rows = candidates.len().div_ceil(MAX_COLS);
     let width = (OUTER_MARGIN * 2.0 + cols as f32 * TILE_W + (cols - 1) as f32 * TILE_GAP).max(300.0);
-    let height = OUTER_MARGIN * 2.0 + 30.0 + rows as f32 * TILE_H + (rows - 1) as f32 * TILE_GAP + 28.0;
+    let height = OUTER_MARGIN * 2.0 + 60.0 + rows as f32 * TILE_H + (rows - 1) as f32 * TILE_GAP;
     let position = popup_position(width, height);
 
     let dark = prefers_dark_theme();
@@ -64,7 +64,7 @@ pub fn show(target_label: String, candidates: Vec<Candidate>) -> Result<Option<S
         "winassoc",
         options,
         Box::new(move |cc| {
-            Ok(Box::new(PickerApp::new(cc, target_label, candidates, images, dark, tx)))
+            Ok(Box::new(PickerApp::new(cc, target_label, candidates, images, dark, tx, timeout_ms)))
         }),
     )
     .map_err(|e| anyhow!("ピッカーの起動に失敗しました: {e}"))?;
@@ -77,10 +77,13 @@ struct PickerApp {
     candidates: Vec<Candidate>,
     textures: Vec<Option<egui::TextureHandle>>,
     selected: usize,
-    frames: u32,
     dark: bool,
     tx: mpsc::Sender<Option<String>>,
     sent: bool,
+    has_focused: bool,
+    start_time: std::time::Instant,
+    last_focused_time: std::time::Instant,
+    timeout_ms: u64,
 }
 
 impl PickerApp {
@@ -91,6 +94,7 @@ impl PickerApp {
         images: Vec<Option<egui::ColorImage>>,
         dark: bool,
         tx: mpsc::Sender<Option<String>>,
+        timeout_ms: u64,
     ) -> Self {
         install_japanese_fonts(&cc.egui_ctx);
         cc.egui_ctx.set_visuals(if dark { egui::Visuals::dark() } else { egui::Visuals::light() });
@@ -106,7 +110,20 @@ impl PickerApp {
             })
             .collect();
 
-        Self { target_label, candidates, textures, selected: 0, frames: 0, dark, tx, sent: false }
+        let now = std::time::Instant::now();
+        Self {
+            target_label,
+            candidates,
+            textures,
+            selected: 0,
+            dark,
+            tx,
+            sent: false,
+            has_focused: false,
+            start_time: now,
+            last_focused_time: now,
+            timeout_ms,
+        }
     }
 
     fn finish(&mut self, ctx: &egui::Context, choice: Option<usize>) {
@@ -195,7 +212,7 @@ impl PickerApp {
 
         // アイコン (選択時 8% 拡大)
         let icon_size = 56.0 * (1.0 + 0.08 * t);
-        let icon_center = Pos2::new(rect.center().x, rect.top() + 42.0);
+        let icon_center = Pos2::new(rect.center().x, rect.top() + 38.0);
         let icon_rect = Rect::from_center_size(icon_center, Vec2::splat(icon_size));
         match &self.textures[index] {
             Some(texture) => {
@@ -228,27 +245,49 @@ impl PickerApp {
         let text_color = if self.dark { Color32::from_gray(235) } else { Color32::from_gray(25) };
         let subtle = if self.dark { Color32::from_gray(160) } else { Color32::from_gray(110) };
         painter.text(
-            Pos2::new(rect.center().x, rect.top() + 86.0),
+            Pos2::new(rect.center().x, rect.top() + 82.0),
             egui::Align2::CENTER_TOP,
             &self.candidates[index].name,
-            FontId::proportional(13.0),
+            FontId::proportional(16.0),
             text_color,
         );
         if let Some(label) = &self.candidates[index].label {
             painter.text(
-                Pos2::new(rect.center().x, rect.top() + 103.0),
+                Pos2::new(rect.center().x, rect.top() + 104.0),
                 egui::Align2::CENTER_TOP,
                 label,
-                FontId::proportional(10.5),
+                FontId::proportional(11.5),
                 subtle,
             );
         }
         if index < 9 {
+            let keycap_center = Pos2::new(rect.center().x, rect.bottom() - 13.0);
+            let keycap_rect = Rect::from_center_size(keycap_center, Vec2::new(20.0, 16.0));
+            
+            let keycap_fill = if self.dark {
+                Color32::from_rgba_unmultiplied(255, 255, 255, 20)
+            } else {
+                Color32::from_rgba_unmultiplied(0, 0, 0, 15)
+            };
+            let keycap_stroke = if self.dark {
+                Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 45))
+            } else {
+                Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 0, 0, 30))
+            };
+            
+            painter.rect_filled(keycap_rect, CornerRadius::same(4), keycap_fill);
+            painter.rect_stroke(
+                keycap_rect,
+                CornerRadius::same(4),
+                keycap_stroke,
+                egui::StrokeKind::Inside,
+            );
+            
             painter.text(
-                Pos2::new(rect.center().x, rect.bottom() - 6.0),
-                egui::Align2::CENTER_BOTTOM,
-                format!("[{}]", index + 1),
-                FontId::proportional(10.0),
+                Pos2::new(keycap_center.x, keycap_center.y + 2.0), // 視覚的な位置調整
+                egui::Align2::CENTER_CENTER,
+                format!("{}", index + 1),
+                FontId::proportional(11.0),
                 subtle,
             );
         }
@@ -262,20 +301,40 @@ impl eframe::App for PickerApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.frames += 1;
         self.handle_keys(ctx);
 
-        // フォーカスを失ったら閉じる (SPEC 6.5)。起動直後の未フォーカスは無視
+        // アクティブ判定：OSウィンドウフォーカスがある、またはマウスがウィンドウ内にある
         let focused = ctx.input(|i| i.focused);
-        if !focused && self.frames > 30 {
+        let pointer_over = ctx.input(|i| i.pointer.hover_pos().is_some());
+        let active = focused || pointer_over;
+
+        if active {
+            self.has_focused = true;
+            self.last_focused_time = std::time::Instant::now();
+        }
+
+        // フォーカスを失ったら閉じる (SPEC 6.5)。起動直後の未フォーカスは無視。
+        // 一時的なフォーカス喪失やチラつきによる誤終了を防ぐため、300msのデバウンスを設ける
+        let should_close = if self.has_focused {
+            !active && self.last_focused_time.elapsed().as_millis() > 300
+        } else {
+            !active && self.start_time.elapsed().as_millis() > self.timeout_ms as u128
+        };
+
+        if should_close {
             self.finish(ctx, None);
         }
 
-        // Mica/Acrylic を透かすため半透明の塗りにする
+        // Mica/Acrylic を透かすため半透明の塗りにする。境界線も追加してデザインを際立たせる
         let panel_fill = if self.dark {
             Color32::from_rgba_unmultiplied(24, 26, 32, 215)
         } else {
             Color32::from_rgba_unmultiplied(248, 249, 252, 225)
+        };
+        let panel_stroke = if self.dark {
+            Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 20))
+        } else {
+            Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 0, 0, 15))
         };
         let subtle = if self.dark { Color32::from_gray(160) } else { Color32::from_gray(110) };
 
@@ -284,18 +343,24 @@ impl eframe::App for PickerApp {
             .frame(
                 egui::Frame::new()
                     .fill(panel_fill)
+                    .stroke(panel_stroke)
                     .corner_radius(CornerRadius::same(12))
                     .inner_margin(Margin::same(OUTER_MARGIN as i8)),
             )
             .show(ctx, |ui| {
+                // 自動挿入されるデフォルトの縦スペースを無効化し、高さを完全にコントロールする
+                ui.spacing_mut().item_spacing.y = 0.0;
+
                 ui.label(
                     RichText::new(format!("{} を開くアプリを選択", self.target_label))
-                        .size(13.0)
+                        .size(15.0)
                         .color(subtle),
                 );
-                ui.add_space(8.0);
+                ui.add_space(12.0);
+
                 let total = self.candidates.len();
-                for row in 0..total.div_ceil(MAX_COLS) {
+                let rows = total.div_ceil(MAX_COLS);
+                for row in 0..rows {
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing = Vec2::new(TILE_GAP, TILE_GAP);
                         for index in (row * MAX_COLS)..((row + 1) * MAX_COLS).min(total) {
@@ -304,11 +369,15 @@ impl eframe::App for PickerApp {
                             }
                         }
                     });
+                    if row + 1 < rows {
+                        ui.add_space(TILE_GAP);
+                    }
                 }
-                ui.add_space(6.0);
+                ui.add_space(12.0);
+
                 ui.label(
                     RichText::new("←/→ 選択 · Enter/数字で決定 · Esc で中止")
-                        .size(10.5)
+                        .size(11.5)
                         .color(subtle),
                 );
             });
@@ -431,7 +500,7 @@ fn install_japanese_fonts(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
     fonts.font_data.insert("jp".to_string(), egui::FontData::from_owned(bytes).into());
     for family in [egui::FontFamily::Proportional, egui::FontFamily::Monospace] {
-        fonts.families.entry(family).or_default().push("jp".to_string());
+        fonts.families.entry(family).or_default().insert(0, "jp".to_string());
     }
     ctx.set_fonts(fonts);
 }

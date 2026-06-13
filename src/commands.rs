@@ -28,7 +28,7 @@ pub fn open(config: &Config, raw_target: &str) -> Result<()> {
                     }
                 })
                 .collect();
-            match picker::show(target_label(&target), entries)? {
+            match picker::show(target_label(&target), entries, config.settings.picker_timeout_ms)? {
                 Some(app) => launch(config, &app, target.raw(), "picker"),
                 None => {
                     logging::log_launch(target.raw(), "picker", "-", "cancelled");
