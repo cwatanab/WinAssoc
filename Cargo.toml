@@ -11,7 +11,6 @@ serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 globset = "0.4"
 dirs = "5"
-chrono = "0.4"
 winreg = "0.55"
 eframe = "0.32"
 raw-window-handle = "0.6"

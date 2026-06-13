@@ -7,6 +7,55 @@ use winreg::enums::KEY_ALL_ACCESS;
 
 use super::{hkcu, notify_assoc_changed, read_user_choice_ext, read_user_choice_protocol, PROGID_PREFIX};
 
+fn now_rfc3339() -> String {
+    let dur = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default();
+    let secs = dur.as_secs();
+    let (year, month, day, hour, min, sec) = utc_from_secs(secs);
+    format!("{year:04}-{month:02}-{day:02}T{hour:02}:{min:02}:{sec:02}+00:00")
+}
+
+fn backup_timestamp() -> String {
+    let dur = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default();
+    let secs = dur.as_secs();
+    let (year, month, day, hour, min, sec) = utc_from_secs(secs);
+    format!("{year:04}{month:02}{day:02}-{hour:02}{min:02}{sec:02}")
+}
+
+pub(crate) fn utc_from_secs(secs: u64) -> (u64, u64, u64, u64, u64, u64) {
+    let mut days = secs / 86400;
+    let mut year = 1970u64;
+    loop {
+        let leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+        let ydays = if leap { 366 } else { 365 };
+        if days < ydays {
+            break;
+        }
+        days -= ydays;
+        year += 1;
+    }
+    let leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    let month_days: [u64; 12] = if leap {
+        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    } else {
+        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    };
+    let mut month = 0u64;
+    while month < 12 && days >= month_days[month as usize] {
+        days -= month_days[month as usize];
+        month += 1;
+    }
+    let day = days + 1;
+    let rem = secs % 86400;
+    let hour = rem / 3600;
+    let min = (rem % 3600) / 60;
+    let sec = rem % 60;
+    (year, month + 1, day, hour, min, sec)
+}
+
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Backup {
     pub created: String,
@@ -42,7 +91,7 @@ fn backup_dir() -> Result<PathBuf> {
 pub fn backup(config: &crate::config::Config) -> Result<PathBuf> {
     let classes = hkcu().open_subkey(r"Software\Classes")?;
     let mut data = Backup {
-        created: chrono::Local::now().to_rfc3339(),
+        created: now_rfc3339(),
         ..Default::default()
     };
 
@@ -65,7 +114,7 @@ pub fn backup(config: &crate::config::Config) -> Result<PathBuf> {
     }
 
     let dir = backup_dir()?;
-    let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
+    let stamp = backup_timestamp();
     let path = dir.join(format!("backup-{stamp}.toml"));
     let text = toml::to_string_pretty(&data)?;
     std::fs::write(&path, &text)?;

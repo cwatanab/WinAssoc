@@ -4,6 +4,15 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
+fn log_timestamp() -> String {
+    let dur = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default();
+    let secs = dur.as_secs();
+    let (year, month, day, hour, min, sec) = crate::registry::backup::utc_from_secs(secs);
+    format!("{year:04}-{month:02}-{day:02} {hour:02}:{min:02}:{sec:02}")
+}
+
 const MAX_LOG_BYTES: u64 = 1024 * 1024; // 1MB でローテーション
 
 fn log_file() -> Option<PathBuf> {
@@ -24,7 +33,7 @@ fn try_log(target: &str, matched: &str, app: &str, result: &str) -> Result<()> {
         let _ = fs::rename(&path, path.with_extension("log.1"));
     }
 
-    let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+    let now = log_timestamp();
     let mut file = fs::OpenOptions::new().create(true).append(true).open(&path)?;
     writeln!(file, "{now}\t{target}\t{matched}\t{app}\t{result}")?;
     Ok(())
