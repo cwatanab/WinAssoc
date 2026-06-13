@@ -2,7 +2,7 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use crate::error::{Error, Result};
 
 fn log_timestamp() -> String {
     let dur = std::time::SystemTime::now()
@@ -25,7 +25,7 @@ pub fn log_launch(target: &str, matched: &str, app: &str, result: &str) {
 }
 
 fn try_log(target: &str, matched: &str, app: &str, result: &str) -> Result<()> {
-    let path = log_file().context("ログディレクトリを特定できません")?;
+    let path = log_file().ok_or_else(|| Error::new("ログディレクトリを特定できません"))?;
     fs::create_dir_all(path.parent().unwrap())?;
 
     // サイズローテーション: winassoc.log → winassoc.log.1 (1 世代)
@@ -41,7 +41,7 @@ fn try_log(target: &str, matched: &str, app: &str, result: &str) -> Result<()> {
 
 /// `winassoc log --tail N`
 pub fn tail(n: usize) -> Result<()> {
-    let path = log_file().context("ログディレクトリを特定できません")?;
+    let path = log_file().ok_or_else(|| Error::new("ログディレクトリを特定できません"))?;
     if !path.exists() {
         println!("ログはまだありません ({})", path.display());
         return Ok(());

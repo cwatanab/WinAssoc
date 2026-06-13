@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Context, Result};
+use crate::bail;
+use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
 use winreg::enums::KEY_ALL_ACCESS;
 
@@ -80,7 +81,7 @@ pub struct ProtocolBackup {
 
 fn backup_dir() -> Result<PathBuf> {
     let dir = dirs::data_local_dir()
-        .context("%LOCALAPPDATA% を特定できません")?
+        .ok_or_else(|| Error::new("%LOCALAPPDATA% を特定できません"))?
         .join("winassoc")
         .join("backup");
     std::fs::create_dir_all(&dir)?;
@@ -128,7 +129,7 @@ pub(crate) fn load_backup(file: Option<&Path>) -> Result<Backup> {
         None => backup_dir()?.join("latest.toml"),
     };
     let text = std::fs::read_to_string(&path)
-        .with_context(|| format!("バックアップを読めません: {}", path.display()))?;
+        .map_err(|e| Error::new(format!("バックアップを読めません: {}: {}", path.display(), e)))?;
     Ok(toml::from_str(&text)?)
 }
 

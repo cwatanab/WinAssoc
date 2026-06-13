@@ -1,8 +1,9 @@
-use anyhow::bail;
+use crate::bail;
+use crate::error::Result;
 
 use super::Config;
 
-pub fn validate_config(config: &Config) -> anyhow::Result<()> {
+pub fn validate_config(config: &Config) -> Result<()> {
     let tables = config
         .ext
         .iter()

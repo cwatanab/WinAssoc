@@ -8,7 +8,7 @@ use window::{apply_window_effects, popup_position};
 
 use std::sync::mpsc;
 
-use anyhow::{anyhow, Result};
+use crate::error::{Error, Result};
 use eframe::egui::{self, Color32, CornerRadius, FontId, Id, Margin, Pos2, Rect, RichText, Sense, Stroke, Vec2};
 
 use crate::{icon, platform};
@@ -69,7 +69,7 @@ pub fn show(target_label: String, candidates: Vec<Candidate>, timeout_ms: u64) -
             Ok(Box::new(PickerApp::new(cc, target_label, candidates, images, dark, tx, timeout_ms)))
         }),
     )
-    .map_err(|e| anyhow!("ピッカーの起動に失敗しました: {e}"))?;
+    .map_err(|e| Error::new(format!("ピッカーの起動に失敗しました: {e}")))?;
 
     Ok(rx.try_recv().ok().flatten())
 }

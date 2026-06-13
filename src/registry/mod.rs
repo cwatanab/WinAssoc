@@ -11,7 +11,7 @@ pub use doctor::doctor;
 
 use std::path::PathBuf;
 
-use anyhow::Result;
+use crate::error::Result;
 use winreg::enums::{HKEY_CURRENT_USER, KEY_ALL_ACCESS};
 use winreg::RegKey;
 

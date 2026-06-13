@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::Result;
+use crate::error::Result;
 
 use super::{hkcu, progid_for_ext, read_user_choice_ext, read_user_choice_protocol, shim_command,
            shim_exe, APP_NAME, CLIENT_PATH, URL_PROGID};

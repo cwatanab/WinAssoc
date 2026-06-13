@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use crate::error::{Error, Result};
 use serde::Deserialize;
 
 mod validate;
@@ -76,7 +76,7 @@ pub struct Rule {
 }
 
 pub fn default_config_path() -> Result<PathBuf> {
-    let base = dirs::config_dir().context("%APPDATA% を特定できません")?;
+    let base = dirs::config_dir().ok_or_else(|| Error::new("%APPDATA% を特定できません"))?;
     let p1 = base.join("winassoc").join("winassoc.toml");
     if p1.exists() {
         return Ok(p1);
@@ -111,9 +111,9 @@ pub fn resolve_config_path() -> Result<PathBuf> {
 impl Config {
     pub fn load(path: &Path) -> Result<Config> {
         let text = std::fs::read_to_string(path)
-            .with_context(|| format!("設定ファイルを読めません: {}", path.display()))?;
+            .map_err(|e| Error::new(format!("設定ファイルを読めません: {}: {}", path.display(), e)))?;
         let config: Config = toml::from_str(&text)
-            .with_context(|| format!("設定ファイルの形式が不正です: {}", path.display()))?;
+            .map_err(|e| Error::new(format!("設定ファイルの形式が不正です: {}: {}", path.display(), e)))?;
         config.validate()?;
         Ok(config)
     }

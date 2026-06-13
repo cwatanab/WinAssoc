@@ -1,4 +1,5 @@
-use anyhow::{bail, Context, Result};
+use crate::bail;
+use crate::error::Result;
 
 use crate::config::{expand_env, Config};
 use crate::engine::{build_command_line, evaluate, Decision, Modifiers, Target};
@@ -53,7 +54,7 @@ fn launch(config: &Config, app: &str, target: &str, matched: &str) -> Result<()>
         }
         Err(e) => {
             logging::log_launch(target, matched, app, &format!("error: {e}"));
-            Err(e).with_context(|| format!("起動に失敗しました: {program}"))
+            Err(crate::error::Error::new(format!("起動に失敗しました: {program}: {e}")))
         }
     }
 }

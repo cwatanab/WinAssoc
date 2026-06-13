@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use anyhow::{bail, Result};
+use crate::bail;
+use crate::error::Result;
 
 use crate::config::{expand_env, AppDef, Config, Rule, RouteTable};
 

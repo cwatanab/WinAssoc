@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use anyhow::{bail, Result};
+use winassoc::bail;
+use winassoc::error::Result;
 use clap::{Arg, Command};
 
 use winassoc::config::{self, Config};
