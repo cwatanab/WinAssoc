@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
 use anyhow::{bail, Result};
-use globset::GlobBuilder;
 
 use crate::config::{expand_env, AppDef, Config, Rule, RouteTable};
 
@@ -159,14 +161,22 @@ fn rule_matches(rule: &Rule, target: &Target, mods: &Modifiers) -> bool {
     true
 }
 
+static GLOB_CACHE: LazyLock<std::sync::Mutex<HashMap<String, globset::GlobMatcher>>> =
+    LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
+
 /// パス区切りを跨いで `**`/`*` を一様に扱う、大文字小文字無視の glob 一致
 fn glob_match(pattern: &str, text: &str) -> bool {
-    GlobBuilder::new(pattern)
-        .case_insensitive(true)
-        .literal_separator(false)
-        .build()
-        .map(|g| g.compile_matcher().is_match(text))
-        .unwrap_or(false)
+    use globset::GlobBuilder;
+    let mut cache = GLOB_CACHE.lock().unwrap();
+    let matcher = cache.entry(pattern.to_string()).or_insert_with(|| {
+        GlobBuilder::new(pattern)
+            .case_insensitive(true)
+            .literal_separator(false)
+            .build()
+            .map(|g| g.compile_matcher())
+            .unwrap_or_else(|_| globset::Glob::new("*").unwrap().compile_matcher())
+    });
+    matcher.is_match(text)
 }
 
 fn all_apps(config: &Config) -> Vec<String> {
