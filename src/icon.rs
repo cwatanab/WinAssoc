@@ -11,6 +11,7 @@ use windows::Win32::UI::Shell::{
 };
 
 /// RGBA (unmultiplied) のアイコン画像データ
+#[derive(Debug)]
 pub struct RgbaImage {
     pub width: usize,
     pub height: usize,
