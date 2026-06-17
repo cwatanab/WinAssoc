@@ -1,0 +1,191 @@
+import { Theme } from "../theme.slint";
+import { FluentIcon } from "../icons.slint";
+import { ScrollView } from "std-widgets.slint";
+import { Card } from "../components/card.slint";
+import { TextField } from "../components/text_field.slint";
+import { NumberBox } from "../components/number_box.slint";
+import { ComboBox } from "../components/combo_box.slint";
+import { AccentButton } from "../components/accent_button.slint";
+import { InfoBadge, BadgeKind } from "../components/info_badge.slint";
+
+export component ManagementPage inherits Rectangle {
+    in property <string> config-path: "";
+    in-out property <int> picker-timeout-ms: 5000;
+    in property <string> theme-mode: "system";
+    in property <[string]> theme-modes: ["system", "light", "dark"];
+    in property <[string]> result-lines: [];
+    in property <bool> result-success: true;
+
+    callback update-picker-timeout(int);
+    callback update-theme-mode(string);
+    callback apply-clicked();
+    callback unregister-clicked();
+    callback doctor-clicked();
+    callback backup-clicked();
+    callback restore-clicked();
+
+    background: transparent;
+    VerticalLayout {
+        spacing: Theme.spacing-l * 1px;
+        width: parent.width;
+
+        Card {
+            VerticalLayout {
+                padding: Theme.spacing-l * 1px;
+                spacing: Theme.spacing-m * 1px;
+                Text {
+                    text: "設定";
+                    font-family: Theme.font-family;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: Theme.current.text-primary;
+                }
+                VerticalLayout {
+                    spacing: Theme.spacing-xs * 1px;
+                    Text {
+                        text: "設定ファイル";
+                        font-family: Theme.font-family;
+                        font-size: 12px;
+                        color: Theme.current.text-secondary;
+                    }
+                    TextField { value: root.config-path; }
+                }
+                VerticalLayout {
+                    spacing: Theme.spacing-xs * 1px;
+                    Text {
+                        text: "ピッカー自動終了 (ミリ秒)";
+                        font-family: Theme.font-family;
+                        font-size: 12px;
+                        color: Theme.current.text-secondary;
+                    }
+                    NumberBox {
+                        min: 1000;
+                        max: 60000;
+                        step: 500;
+                        value <=> root.picker-timeout-ms;
+                    }
+                }
+                VerticalLayout {
+                    spacing: Theme.spacing-xs * 1px;
+                    Text {
+                        text: "テーマ モード";
+                        font-family: Theme.font-family;
+                        font-size: 12px;
+                        color: Theme.current.text-secondary;
+                    }
+                    ComboBox {
+                        model: root.theme-modes;
+                        current-value: root.theme-mode;
+                        selected(v) => {
+                            root.update-theme-mode(v);
+                        }
+                    }
+                }
+            }
+        }
+
+        Card {
+            VerticalLayout {
+                padding: Theme.spacing-l * 1px;
+                spacing: Theme.spacing-m * 1px;
+                Text {
+                    text: "レジストリ操作";
+                    font-family: Theme.font-family;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: Theme.current.text-primary;
+                }
+                HorizontalLayout {
+                    spacing: Theme.spacing-s * 1px;
+                    AccentButton {
+                        text: "適用 (apply)";
+                        clicked => {
+                            root.apply-clicked();
+                        }
+                    }
+                    AccentButton {
+                        text: "解除 (unregister)";
+                        clicked => {
+                            root.unregister-clicked();
+                        }
+                    }
+                    AccentButton {
+                        text: "診断 (doctor)";
+                        clicked => {
+                            root.doctor-clicked();
+                        }
+                    }
+                }
+            }
+        }
+
+        Card {
+            VerticalLayout {
+                padding: Theme.spacing-l * 1px;
+                spacing: Theme.spacing-m * 1px;
+                Text {
+                    text: "バックアップ";
+                    font-family: Theme.font-family;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: Theme.current.text-primary;
+                }
+                HorizontalLayout {
+                    spacing: Theme.spacing-s * 1px;
+                    AccentButton {
+                        text: "バックアップ";
+                        clicked => {
+                            root.backup-clicked();
+                        }
+                    }
+                    AccentButton {
+                        text: "復元 (restore)";
+                        clicked => {
+                            root.restore-clicked();
+                        }
+                    }
+                }
+            }
+        }
+
+        if (root.result-lines.length > 0) : Card {
+            VerticalLayout {
+                padding: Theme.spacing-l * 1px;
+                spacing: Theme.spacing-m * 1px;
+                HorizontalLayout {
+                    spacing: Theme.spacing-s * 1px;
+                    Text {
+                        text: root.result-success ? "✓ 成功" : "✗ エラー";
+                        font-family: Theme.font-family;
+                        font-size: 14px;
+                        font-weight: 600;
+                        color: root.result-success ? Theme.current.system-success : Theme.current.system-critical;
+                    }
+                    InfoBadge {
+                        text: root.result-lines.length + " 件";
+                        kind: root.result-success ? BadgeKind.success : BadgeKind.critical;
+                    }
+                }
+                Rectangle {
+                    height: 200px;
+                    border-radius: Theme.radius-control * 1px;
+                    background: Theme.current.control-default;
+                    border-width: 1px;
+                    border-color: Theme.current.control-stroke;
+                    ScrollView {
+                        VerticalLayout {
+                            padding: Theme.spacing-s * 1px;
+                            spacing: 2px;
+                            for line in root.result-lines: Text {
+                                text: line;
+                                font-family: Theme.font-family-mono;
+                                font-size: 12px;
+                                color: root.result-success ? Theme.current.text-primary : Theme.current.system-critical;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

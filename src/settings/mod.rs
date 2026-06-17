@@ -11,6 +11,7 @@ use crate::platform;
 pub mod apps;
 pub mod data;
 pub mod ext;
+pub mod management;
 pub mod protocol;
 pub mod theme;
 pub mod validation;
