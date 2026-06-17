@@ -66,7 +66,7 @@ pub struct RouteTable {
 }
 
 /// 条件キーは複数指定で AND。アクションは `app` か `pick` のどちらか一方
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Rule {
     pub glob: Option<String>,
