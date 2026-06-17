@@ -1,0 +1,28 @@
+import { Theme } from "../theme.slint";
+
+export enum BadgeKind { success, caution, critical, attention, neutral }
+
+export component InfoBadge inherits Rectangle {
+    in property <string> text;
+    in property <BadgeKind> kind: BadgeKind.neutral;
+    height: 20px;
+    min-width: 40px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 10px;
+    background: root.kind == BadgeKind.success ? Theme.current.system-success
+        : root.kind == BadgeKind.caution ? Theme.current.system-caution
+        : root.kind == BadgeKind.critical ? Theme.current.system-critical
+        : root.kind == BadgeKind.attention ? Theme.current.system-attention
+        : Theme.current.control-tertiary;
+    Text {
+        text: root.text;
+        font-family: Theme.font-family;
+        font-size: 12px;
+        color: white;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        width: parent.width;
+        height: parent.height;
+    }
+}

@@ -1,0 +1,35 @@
+import { Theme } from "../theme.slint";
+
+export component AccentButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary: false;
+    in property <bool> disabled: false;
+    in property <bool> destructive: false;
+    callback clicked();
+    height: 32px;
+    min-width: 120px;
+    border-radius: Theme.radius-control * 1px;
+    background: root.disabled ? Theme.current.control-tertiary
+        : root.primary ? Theme.current.accent-default
+        : root.destructive ? Theme.current.system-critical
+        : Theme.current.control-default;
+    border-width: root.primary || root.destructive ? 0px : 1px;
+    border-color: Theme.current.control-stroke;
+    TouchArea {
+        enabled: !root.disabled;
+        clicked => { root.clicked(); }
+        Text {
+            text: root.text;
+            font-family: Theme.font-family;
+            font-size: 14px;
+            font-weight: 600;
+            color: root.disabled ? Theme.current.text-tertiary
+                : root.primary || root.destructive ? Theme.current.text-on-accent
+                : Theme.current.text-primary;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            width: parent.width;
+            height: parent.height;
+        }
+    }
+}

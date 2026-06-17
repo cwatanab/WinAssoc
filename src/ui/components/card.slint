@@ -1,0 +1,10 @@
+import { Theme } from "../theme.slint";
+
+export component Card inherits Rectangle {
+    in property <bool> acrylic: false;
+    background: root.acrylic ? Theme.current.bg-acrylic : Theme.current.bg-card;
+    border-radius: Theme.radius-card * 1px;
+    drop-shadow-color: #00000010;
+    drop-shadow-blur: 8px;
+    drop-shadow-offset-y: 2px;
+}
