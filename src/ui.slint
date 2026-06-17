@@ -3,6 +3,20 @@ export struct CandidateData {
     label: string,
 }
 
+export struct AppEntry {
+    name: string,
+    cmd: string,
+    args: string,
+    label: string,
+}
+
+export struct RouteEntry {
+    key: string,
+    default: string,
+    candidates: string,
+    rules_summary: string,
+}
+
 export component Picker inherits Window {
     no-frame: true;
     always-on-top: true;
@@ -27,12 +41,8 @@ export component Picker inherits Window {
 
     focus-area := FocusScope {
         key-pressed(event) => {
-            if (event.text == Key.Escape) {
-                root.cancel()
-            }
-            if (event.text == Key.Return) {
-                root.choose(root.selected)
-            }
+            if (event.text == Key.Escape) { root.cancel() }
+            if (event.text == Key.Return) { root.choose(root.selected) }
             if (event.text == Key.RightArrow && root.candidates.length > 0) {
                 root.selected = Math.mod(root.selected + 1, root.candidates.length)
             }
@@ -70,19 +80,13 @@ export component Picker inherits Window {
     }
 }
 
-enum Page {
-    apps,
-    extensions,
-    protocols,
-    management,
-}
+enum Page { apps, extensions, protocols, management }
 
 component SidebarButton {
     in property <string> text;
     in property <bool> active: false;
     callback clicked();
     preferred-height: 40px;
-
     Rectangle {
         background: root.active ? #ddedff : #00000000;
         TouchArea {
@@ -98,61 +102,12 @@ component SidebarButton {
     }
 }
 
-component AppsPage {
-    VerticalLayout {
-        spacing: 16px;
-        Text {
-            text: "アプリ一覧";
-            font-size: 18px;
-            font-weight: 700;
-        }
-        Text {
-            text: "アプリの追加・編集は将来実装予定です。";
-            font-size: 13px;
-            color: #888888;
-        }
-    }
-}
-
-component ExtensionsPage {
-    VerticalLayout {
-        spacing: 16px;
-        Text {
-            text: "拡張子ルート";
-            font-size: 18px;
-            font-weight: 700;
-        }
-        Text {
-            text: "拡張子ルートの編集は将来実装予定です。";
-            font-size: 13px;
-            color: #888888;
-        }
-    }
-}
-
-component ProtocolsPage {
-    VerticalLayout {
-        spacing: 16px;
-        Text {
-            text: "プロトコルルート";
-            font-size: 18px;
-            font-weight: 700;
-        }
-        Text {
-            text: "プロトコルルートの編集は将来実装予定です。";
-            font-size: 13px;
-            color: #888888;
-        }
-    }
-}
-
 component ActionButton {
     in property <string> text;
     in property <bool> primary: false;
     callback clicked();
     preferred-height: 32px;
     min-width: 140px;
-
     Rectangle {
         background: root.primary ? #1060d0 : #e0e0e0;
         border-radius: 4px;
@@ -169,6 +124,70 @@ component ActionButton {
     }
 }
 
+component AppsPageContainer {
+    callback add-app();
+    callback delete-app(int);
+    callback update-app(int, string, string, string, string);
+
+    HorizontalLayout {
+        spacing: 16px;
+        Rectangle {
+            width: 200px;
+            VerticalLayout {
+                spacing: 8px;
+                Text { text: "アプリ一覧"; font-size: 16px; font-weight: 600; }
+                ActionButton { text: "+ 追加"; clicked => { root.add-app(); } }
+                Rectangle { height: 1px; background: #e0e0e0; }
+                Rectangle {
+                    VerticalLayout {
+                        padding-top: 4px;
+                        padding-bottom: 4px;
+                        Text {
+                            text: "リストは現在編集中…";
+                            color: #888888;
+                            font-size: 12px;
+                        }
+                    }
+                }
+            }
+        }
+        Rectangle { width: 1px; background: #e0e0e0; }
+        Rectangle {
+            VerticalLayout {
+                spacing: 12px;
+                Text { text: "アプリ編集"; font-size: 16px; font-weight: 600; }
+                Text {
+                    text: "左のリストからアプリを選択してください。";
+                    color: #888888;
+                    font-size: 13px;
+                }
+            }
+        }
+    }
+}
+
+component ExtensionsPage {
+    VerticalLayout {
+        spacing: 16px;
+        Text { text: "拡張子ルート"; font-size: 18px; font-weight: 700; }
+        Text {
+            text: "編集は将来実装予定です。config.toml を直接編集してください。";
+            font-size: 13px; color: #888888;
+        }
+    }
+}
+
+component ProtocolsPage {
+    VerticalLayout {
+        spacing: 16px;
+        Text { text: "プロトコルルート"; font-size: 18px; font-weight: 700; }
+        Text {
+            text: "編集は将来実装予定です。config.toml を直接編集してください。";
+            font-size: 13px; color: #888888;
+        }
+    }
+}
+
 component ManagementPage {
     in-out property <bool> dirty;
     callback apply();
@@ -180,50 +199,21 @@ component ManagementPage {
 
     VerticalLayout {
         spacing: 16px;
-        Text {
-            text: "管理";
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        Rectangle {
-            height: 1px;
-            background: #e0e0e0;
-        }
-
+        Text { text: "管理"; font-size: 18px; font-weight: 700; }
+        Rectangle { height: 1px; background: #e0e0e0; }
         HorizontalLayout {
             spacing: 12px;
-            ActionButton {
-                text: "保存";
-                primary: root.dirty;
-                clicked => { root.save-config(); }
-            }
+            ActionButton { text: "保存"; primary: root.dirty; clicked => { root.save-config(); } }
         }
-
-        Rectangle {
-            height: 1px;
-            background: #e0e0e0;
-        }
-
-        Text {
-            text: "レジストリ操作";
-            font-size: 15px;
-            font-weight: 600;
-        }
-
+        Rectangle { height: 1px; background: #e0e0e0; }
+        Text { text: "レジストリ操作"; font-size: 15px; font-weight: 600; }
         HorizontalLayout {
             spacing: 12px;
             ActionButton { text: "適用 (apply)"; clicked => { root.apply(); } }
             ActionButton { text: "解除 (unregister)"; clicked => { root.unregister(); } }
             ActionButton { text: "診断 (doctor)"; clicked => { root.doctor(); } }
         }
-
-        Text {
-            text: "バックアップ";
-            font-size: 15px;
-            font-weight: 600;
-        }
-
+        Text { text: "バックアップ"; font-size: 15px; font-weight: 600; }
         HorizontalLayout {
             spacing: 12px;
             ActionButton { text: "バックアップ"; clicked => { root.backup(); } }
@@ -240,6 +230,8 @@ export component Settings inherits Window {
     in-out property <Page> current-page: Page.apps;
     in-out property <bool> dirty: false;
     in property <string> config-path: "";
+    in property <[AppEntry]> apps: [];
+    in-out property <int> selected-app: -1;
 
     callback apply();
     callback unregister();
@@ -248,6 +240,9 @@ export component Settings inherits Window {
     callback restore();
     callback save-config();
 
+    callback add-app();
+    callback delete-app(int);
+
     VerticalLayout {
         HorizontalLayout {
             Rectangle {
@@ -255,7 +250,6 @@ export component Settings inherits Window {
                 background: #f3f3f3;
                 VerticalLayout {
                     padding: 8px;
-
                     SidebarButton { text: "アプリ"; active: root.current-page == Page.apps; clicked => { root.current-page = Page.apps; } }
                     SidebarButton { text: "拡張子"; active: root.current-page == Page.extensions; clicked => { root.current-page = Page.extensions; } }
                     SidebarButton { text: "プロトコル"; active: root.current-page == Page.protocols; clicked => { root.current-page = Page.protocols; } }
@@ -265,9 +259,11 @@ export component Settings inherits Window {
             Rectangle {
                 VerticalLayout {
                     padding: 24px;
-                    spacing: 16px;
-
-                    if (root.current-page == Page.apps) : AppsPage { }
+                    spacing: 12px;
+                    if (root.current-page == Page.apps) : AppsPageContainer {
+                        add-app => { root.add-app(); }
+                        delete-app(idx) => { root.delete-app(idx); }
+                    }
                     if (root.current-page == Page.extensions) : ExtensionsPage { }
                     if (root.current-page == Page.protocols) : ProtocolsPage { }
                     if (root.current-page == Page.management) : ManagementPage {
@@ -293,11 +289,7 @@ export component Settings inherits Window {
                 padding-right: 12px;
                 padding-top: 4px;
                 padding-bottom: 4px;
-                Text {
-                    text: root.config-path;
-                    font-size: 11px;
-                    color: #999999;
-                }
+                Text { text: root.config-path; font-size: 11px; color: #999999; }
                 Text {
                     text: root.dirty ? " (未保存)" : " (保存済)";
                     font-size: 11px;

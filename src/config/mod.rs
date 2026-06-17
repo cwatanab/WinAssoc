@@ -39,7 +39,7 @@ fn default_picker_timeout_ms() -> u64 {
     5000
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AppDef {
     pub cmd: String,
