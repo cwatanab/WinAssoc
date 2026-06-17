@@ -508,21 +508,22 @@ export struct AppEntry {
     error: string,         // 検証エラー メッセージ
 }
 
+// 表示と編集を分離: 表示は不変 [T] プロパティ、編集はコールバック経由で VecModel を直接操作
 export struct ExtEntry {
     key: string,           // ".html"
     default: string,
     default-error: string,
-    candidates: [string],
+    candidates: [string],  // 表示用 (VecModel と同期)
     candidates-error: string,
-    rules: [RuleEntry],
-    candidates-model: /* nested model handle */,
-    rules-model: /* nested model handle */,
+    rules: [RuleEntry],    // 表示用 (VecModel と同期)
 }
 
 export struct ProtoEntry {
     scheme: string,        // "https"
     default: string,
+    default-error: string,
     candidates: [string],
+    candidates-error: string,
     rules: [RuleEntry],
 }
 
@@ -537,28 +538,21 @@ export struct RuleEntry {
 }
 ```
 
-VecModel の入れ子は Slint の `VecModel<T>` を入れ子にする:
+入れ子リスト (candidates / rules) は **表示用 [T] プロパティ** と **編集用 VecModel** を分離:
 
 ```rust
-let ext_model: Rc<VecModel<ExtEntry>> = Rc::new(VecModel::from(vec![]));
-for (key, table) in &config.ext {
-    let candidates: Rc<VecModel<String>> = Rc::new(VecModel::from(
-        table.candidates.clone().unwrap_or_default()
-    ));
-    let rules: Rc<VecModel<RuleEntry>> = Rc::new(VecModel::from(
-        table.rules.iter().map(rule_to_entry).collect()
-    ));
-    ext_model.push(ExtEntry {
-        key: key.clone().into(),
-        default: table.default.clone().unwrap_or_default().into(),
-        candidates_model: candidates.into(),
-        rules_model: rules.into(),
-        ..Default::default()
-    });
+// ページ コンポーネントのプロパティとして VecModel を保持 (in プロパティ経由)
+pub struct PagesState {
+    pub ext_model: Rc<VecModel<ExtEntry>>,
+    pub ext_candidates_models: HashMap<String, Rc<VecModel<String>>>,
+    pub ext_rules_models: HashMap<String, Rc<VecModel<RuleEntry>>>,
+    pub proto_model: Rc<VecModel<ProtoEntry>>,
+    pub proto_candidates_models: HashMap<String, Rc<VecModel<String>>>,
+    pub proto_rules_models: HashMap<String, Rc<VecModel<RuleEntry>>>,
 }
 ```
 
-(Slint の `in-out` プロパティで `VecModel` を保持する機構は 1.x でサポート済み。入れ子の操作は `set_rows` / `push` / `remove` を介して行う)
+各コールバック (ルール追加 / 候補追加等) は `state.ext_rules_models.get(&key)` で `Rc<VecModel<RuleEntry>>` を取得し、`push` / `remove` / `set_row_data` で直接操作。同時に外側の `VecModel<ExtEntry>` の該当行を `set_row_data(idx, ...)` で更新して `candidates` / `rules` フィールドを最新化。
 
 ---
 
@@ -582,18 +576,15 @@ for (key, table) in &config.ext {
 
 ## Cargo.toml 変更
 
-```toml
-# 追加 (windows feature)
-[dependencies.windows]
-features = [
-    # 既存 + 必要に応じて
-    "Win32_UI_Shell",           # 既存
-    "Win32_UI_WindowsAndMessaging", # 既存
-    "Win32_Graphics_Dwm",       # 既存 (Mica 用)
-]
-```
+**なし (新規 crate 追加なし、既存依存の追加もなし)**
 
-新規 crate 追加なし。Slint の機能拡張も不要 (1.x で十分)。
+要件確認:
+- `slint = "1"` (既存) で UI 実装は完結
+- `windows = "0.61"` の features は現状の `Win32_Foundation`, `Win32_UI_Input_KeyboardAndMouse`, `Win32_UI_Shell`, `Win32_UI_WindowsAndMessaging`, `Win32_UI_HiDpi`, `Win32_Graphics_Gdi`, `Win32_Graphics_Dwm`, `Win32_System_Com` で Mica (DWMWA_SYSTEMBACKDROP_TYPE / DWMWA_WINDOW_CORNER_PREFERENCE) と SetWindowSubclass に必要十分
+- `serde`, `toml`, `winreg`, `dirs` も既存で充足
+- `slint-build = "1"` (既存) で `.slint` 分割コンパイル対応
+
+ビルド スクリプト (`build.rs`) は `slint_build::compile` の対象を `src/ui/settings.slint` に変更 (`src/ui.slint` を削除して新規ファイル群をコンパイル)。
 
 ---
 
@@ -660,8 +651,8 @@ features = [
 
 | リスク | 影響 | 対策 |
 |--------|------|------|
-| Slint 1.x の HWND アクセス API が限定的 | Mica 適用 / WM_NCHITTEST フック不可 | 1.5+ で `WindowHandle` 系の API を確認、なければ `slint::platform::set_platform` で独自プラットフォーム抽象を提供 |
-| 拡張タイトルバーのドラッグ実装が複雑 | UX 低下 | フォールバック: 標準タイトルバー残し + コマンドバーはインライン |
+| Slint 1.x の HWND アクセス API が限定的 | Mica 適用 / WM_NCHITTEST フック不可 | 1.x の `window_handle()` 系 API を確認しアクセス、なければ `slint::platform::set_platform` で独自プラットフォーム抽象を提供。Rust 側は `windows-rs` で HWND を取得して DwmSet を直接呼ぶ |
+| 拡張タイトルバーのドラッグ実装が複雑 | UX 低下 (最大化 / ドラッグ不可) | **第一選択**: `SetWindowSubclass` + `WM_NCHITTEST` でクライアント領域最上部を `HTCAPTION` 化、最大化 / 最小化 / 閉じるは `WM_SYSCOMMAND` 経由。**フォールバック**: 標準タイトルバーを残し、コマンドバーはクライアント領域内 (タイトルバー直下) にインライン配置 |
 | Mica が古い Win11 で表示崩れ | 美観 | `DWMWA_SYSTEMBACKDROP_TYPE` 未対応時は DwmSet がエラー → 握りつぶして純色背景 |
 | 入れ子 VecModel のメモリ管理 | 性能/リーク | Rc 循環参照に注意、VecModel はページごとに 1 個、再構築時は明示的に drop |
 | Segoe UI Variable 非搭載環境 (Win10) | タイポ | `Segoe UI` フォールバック、font-family 文字列で吸収 |
