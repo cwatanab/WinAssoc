@@ -36,9 +36,33 @@ pub fn run() -> Result<()> {
         }).collect()
     };
 
+    let build_routes_model = |routes: &std::collections::BTreeMap<String, crate::config::RouteTable>| -> Vec<crate::RouteEntry> {
+        routes.iter().map(|(key, table)| {
+            let default = table.default.clone().unwrap_or_default();
+            let candidates = table.candidates.as_ref()
+                .map(|v| v.join(", "))
+                .unwrap_or_default();
+            let rules_summary = format!("{}ルール", table.rules.len());
+            crate::RouteEntry {
+                key: key.clone().into(),
+                default: default.into(),
+                candidates: candidates.into(),
+                rules_summary: rules_summary.into(),
+            }
+        }).collect()
+    };
+
     let apps_model: Rc<VecModel<crate::AppEntry>> =
         Rc::new(VecModel::from(build_apps_model(&config_rc.borrow())));
     ui.set_apps(apps_model.clone().into());
+
+    let exts_model: Rc<VecModel<crate::RouteEntry>> =
+        Rc::new(VecModel::from(build_routes_model(&config_rc.borrow().ext)));
+    ui.set_exts(exts_model.clone().into());
+
+    let protocols_model: Rc<VecModel<crate::RouteEntry>> =
+        Rc::new(VecModel::from(build_routes_model(&config_rc.borrow().protocol)));
+    ui.set_protocols(protocols_model.clone().into());
 
     let ui_weak = ui.as_weak();
 

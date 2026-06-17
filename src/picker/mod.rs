@@ -59,7 +59,11 @@ pub fn show(target_label: String, candidates: Vec<Candidate>, timeout_ms: u64) -
     ui.set_icons(icon_model.into());
 
     let (cx, cy) = get_cursor_pos();
-    ui.window().set_position(slint::PhysicalPosition::new(cx, cy));
+    let monitor_scale = get_monitor_scale(cx, cy);
+    ui.window().set_position(slint::PhysicalPosition::new(
+        (cx as f64 / monitor_scale) as i32 - 150,
+        (cy as f64 / monitor_scale) as i32 + 20,
+    ));
 
     let (tx, rx) = mpsc::channel::<Option<String>>();
     let candidate_names: Vec<String> = candidates.iter().map(|c| c.name.clone()).collect();
@@ -104,5 +108,18 @@ fn get_cursor_pos() -> (i32, i32) {
         } else {
             (200, 200)
         }
+    }
+}
+
+fn get_monitor_scale(x: i32, y: i32) -> f64 {
+    use windows::Win32::Foundation::POINT;
+    use windows::Win32::Graphics::Gdi::{MonitorFromPoint, MONITOR_DEFAULTTONEAREST};
+    use windows::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
+    unsafe {
+        let monitor = MonitorFromPoint(POINT { x, y }, MONITOR_DEFAULTTONEAREST);
+        let mut dpi_x = 96u32;
+        let mut dpi_y = 96u32;
+        let _ = GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &mut dpi_x, &mut dpi_y);
+        (dpi_x as f64 / 96.0).max(0.5)
     }
 }

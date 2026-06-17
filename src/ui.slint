@@ -174,7 +174,12 @@ component AppsPageContainer {
                         padding-top: 4px;
                         padding-bottom: 4px;
                         Text {
-                            text: "リストは現在編集中…";
+                            text: "追加/削除は左のリストから行います。";
+                            color: #888888;
+                            font-size: 12px;
+                        }
+                        Text {
+                            text: "詳細編集は右のフォームで行います。";
                             color: #888888;
                             font-size: 12px;
                         }
@@ -188,7 +193,7 @@ component AppsPageContainer {
                 spacing: 12px;
                 Text { text: "アプリ編集"; font-size: 16px; font-weight: 600; }
                 Text {
-                    text: "左のリストからアプリを選択してください。";
+                    text: "アプリの追加・編集は将来実装予定です。";
                     color: #888888;
                     font-size: 13px;
                 }
@@ -201,9 +206,16 @@ component ExtensionsPage {
     VerticalLayout {
         spacing: 16px;
         Text { text: "拡張子ルート"; font-size: 18px; font-weight: 700; }
-        Text {
-            text: "編集は将来実装予定です。config.toml を直接編集してください。";
-            font-size: 13px; color: #888888;
+        Rectangle { height: 1px; background: #e0e0e0; }
+        Rectangle {
+            VerticalLayout {
+                spacing: 4px;
+                Text {
+                    text: "一覧表示のみ。編集は config.toml を直接編集してください。";
+                    font-size: 13px;
+                    color: #888888;
+                }
+            }
         }
     }
 }
@@ -212,9 +224,16 @@ component ProtocolsPage {
     VerticalLayout {
         spacing: 16px;
         Text { text: "プロトコルルート"; font-size: 18px; font-weight: 700; }
-        Text {
-            text: "編集は将来実装予定です。config.toml を直接編集してください。";
-            font-size: 13px; color: #888888;
+        Rectangle { height: 1px; background: #e0e0e0; }
+        Rectangle {
+            VerticalLayout {
+                spacing: 4px;
+                Text {
+                    text: "一覧表示のみ。編集は config.toml を直接編集してください。";
+                    font-size: 13px;
+                    color: #888888;
+                }
+            }
         }
     }
 }
@@ -262,6 +281,8 @@ export component Settings inherits Window {
     in-out property <bool> dirty: false;
     in property <string> config-path: "";
     in property <[AppEntry]> apps: [];
+    in property <[RouteEntry]> exts: [];
+    in property <[RouteEntry]> protocols: [];
     in-out property <int> selected-app: -1;
 
     callback apply();
