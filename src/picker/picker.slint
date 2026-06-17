@@ -1,0 +1,89 @@
+export struct CandidateData {
+    name: string,
+    label: string,
+}
+
+export component Picker inherits Window {
+    no-frame: true;
+    always-on-top: true;
+    title: "winassoc";
+    background: #00000000;
+    width: 300px;
+    height: 300px;
+
+    in-out property <string> target-label: " を開くアプリを選択";
+    in property <[CandidateData]> candidates: [];
+    in property <[image]> icons: [];
+    in-out property <int> selected: 0;
+    in property <brush> panel-color: #181a20d7;
+    in property <brush> text-color: #ebebeb;
+    in property <brush> subtle-color: #a0a0a0;
+    in property <brush> accent-color: #60a5fa;
+
+    callback choose(int);
+    callback cancel();
+
+    forward-focus: focus-area;
+
+    focus-area := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                root.cancel()
+            }
+            if (event.text == Key.Return) {
+                root.choose(root.selected)
+            }
+            if (event.text == Key.RightArrow && root.candidates.length > 0) {
+                root.selected = Math.mod(root.selected + 1, root.candidates.length)
+            }
+            if (event.text == Key.LeftArrow && root.candidates.length > 0) {
+                root.selected = Math.mod(root.selected + root.candidates.length - 1, root.candidates.length)
+            }
+            if (event.text == Key.Digit1) {
+                root.choose(0)
+            }
+            if (event.text == Key.Digit2) {
+                root.choose(1)
+            }
+            if (event.text == Key.Digit3) {
+                root.choose(2)
+            }
+            if (event.text == Key.Digit4) {
+                root.choose(3)
+            }
+            if (event.text == Key.Digit5) {
+                root.choose(4)
+            }
+            if (event.text == Key.Digit6) {
+                root.choose(5)
+            }
+            if (event.text == Key.Digit7) {
+                root.choose(6)
+            }
+            if (event.text == Key.Digit8) {
+                root.choose(7)
+            }
+            if (event.text == Key.Digit9) {
+                root.choose(8)
+            }
+            accept
+        }
+
+        Rectangle {
+            background: root.panel-color;
+            border-radius: 12px;
+            VerticalLayout {
+                padding: 18px;
+                spacing: 12px;
+                Text {
+                    text: root.target-label;
+                    color: root.subtle-color;
+                    font-size: 10px;
+                }
+                Rectangle {
+                    height: root.height - 60px;
+                }
+            }
+        }
+    }
+}
