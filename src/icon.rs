@@ -1,5 +1,4 @@
-//! exe からのアプリアイコン抽出 (SPEC 6.5: IShellItemImageFactory)
-
+//! exe からのアプリアイコン抽出 (IShellItemImageFactory)
 
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::SIZE;
@@ -11,8 +10,15 @@ use windows::Win32::UI::Shell::{
     SHCreateItemFromParsingName, IShellItemImageFactory, SIIGBF_BIGGERSIZEOK, SIIGBF_ICONONLY,
 };
 
+/// RGBA (unmultiplied) のアイコン画像データ
+pub struct RgbaImage {
+    pub width: usize,
+    pub height: usize,
+    pub pixels: Vec<u8>,
+}
+
 /// exe パスから RGBA (unmultiplied) のアイコン画像を抽出する。失敗時は None
-pub fn extract_icon_rgba(path: &str, size: i32) -> Option<Vec<u8>> {
+pub fn extract_icon_rgba(path: &str, size: i32) -> Option<RgbaImage> {
     let wide: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
     unsafe {
         let factory: IShellItemImageFactory =
@@ -63,6 +69,6 @@ pub fn extract_icon_rgba(path: &str, size: i32) -> Option<Vec<u8>> {
         if pixels.iter().skip(3).step_by(4).all(|&a| a == 0) {
             return None; // 全透明 = 抽出失敗扱い
         }
-        Some(pixels)
+        Some(RgbaImage { width: size as usize, height: size as usize, pixels })
     }
 }
