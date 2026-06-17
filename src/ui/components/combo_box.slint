@@ -1,0 +1,8 @@
+import { Theme } from "../theme.slint";
+import { ComboBox as StdComboBox } from "std-widgets.slint";
+
+// NOTE: Slint std-widgets ComboBox does not expose styling properties
+// (background, border, font, color). Fluent theming deferred to later task.
+export component ComboBox inherits StdComboBox {
+    height: 32px;
+}
