@@ -1,6 +1,6 @@
 //! exe からのアプリアイコン抽出 (SPEC 6.5: IShellItemImageFactory)
 
-use eframe::egui;
+
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::SIZE;
 use windows::Win32::Graphics::Gdi::{
@@ -12,7 +12,7 @@ use windows::Win32::UI::Shell::{
 };
 
 /// exe パスから RGBA (unmultiplied) のアイコン画像を抽出する。失敗時は None
-pub fn extract_icon_rgba(path: &str, size: i32) -> Option<egui::ColorImage> {
+pub fn extract_icon_rgba(path: &str, size: i32) -> Option<Vec<u8>> {
     let wide: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
     unsafe {
         let factory: IShellItemImageFactory =
@@ -63,9 +63,6 @@ pub fn extract_icon_rgba(path: &str, size: i32) -> Option<egui::ColorImage> {
         if pixels.iter().skip(3).step_by(4).all(|&a| a == 0) {
             return None; // 全透明 = 抽出失敗扱い
         }
-        Some(egui::ColorImage::from_rgba_unmultiplied(
-            [size as usize, size as usize],
-            &pixels,
-        ))
+        Some(pixels)
     }
 }

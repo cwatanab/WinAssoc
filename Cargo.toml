@@ -11,8 +11,7 @@ toml = "0.8"
 globset = "0.4"
 dirs = "5"
 winreg = "0.55"
-eframe = { version = "0.32", default-features = false, features = ["glow", "default_fonts"] }
-raw-window-handle = "0.6"
+slint = "1"
 
 [dependencies.windows]
 version = "0.61"
@@ -28,6 +27,7 @@ features = [
 ]
 
 [build-dependencies]
+slint-build = "1"
 winres = "0.1"
 
 [profile.release]
