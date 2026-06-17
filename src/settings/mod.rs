@@ -21,6 +21,7 @@ pub fn run() -> Result<()> {
         .map_err(|e| crate::error::Error::new(format!("設定画面の起動に失敗しました: {e}")))?;
 
     ui.set_config_path(config_path.display().to_string().into());
+    ui.set_dark_theme(platform::prefers_dark_theme());
 
     let config_rc = Rc::new(RefCell::new(config));
     let config_path_rc = Rc::new(config_path.clone());

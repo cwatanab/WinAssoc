@@ -55,8 +55,20 @@ pub fn show(target_label: String, candidates: Vec<Candidate>, timeout_ms: u64) -
     let icon_model = std::rc::Rc::new(slint::VecModel::from(icons));
 
     ui.set_target_label(target_label.into());
-    ui.set_candidates(candidate_model.into());
-    ui.set_icons(icon_model.into());
+    ui.set_candidates(candidate_model.clone().into());
+    ui.set_icons(icon_model.clone().into());
+
+    if platform::prefers_dark_theme() {
+        ui.set_panel_color(slint::Brush::from(slint::Color::from_argb_encoded(0xd7181a20)));
+        ui.set_text_color(slint::Brush::from(slint::Color::from_argb_encoded(0xffebebeb)));
+        ui.set_subtle_color(slint::Brush::from(slint::Color::from_argb_encoded(0xffa0a0a0)));
+        ui.set_accent_color(slint::Brush::from(slint::Color::from_argb_encoded(0xff60a5fa)));
+    } else {
+        ui.set_panel_color(slint::Brush::from(slint::Color::from_argb_encoded(0xf0ffffff)));
+        ui.set_text_color(slint::Brush::from(slint::Color::from_argb_encoded(0xff1a1a1a)));
+        ui.set_subtle_color(slint::Brush::from(slint::Color::from_argb_encoded(0xff666666)));
+        ui.set_accent_color(slint::Brush::from(slint::Color::from_argb_encoded(0xff2563eb)));
+    }
 
     let (cx, cy) = get_cursor_pos();
     let monitor_scale = get_monitor_scale(cx, cy);

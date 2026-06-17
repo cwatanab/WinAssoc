@@ -116,10 +116,11 @@ enum Page { apps, extensions, protocols, management }
 component SidebarButton {
     in property <string> text;
     in property <bool> active: false;
+    in property <bool> dark-theme: false;
     callback clicked();
     preferred-height: 40px;
     Rectangle {
-        background: root.active ? #ddedff : #00000000;
+        background: root.active ? (root.dark-theme ? #1a3350 : #ddedff) : #00000000;
         TouchArea {
             clicked => { root.clicked(); }
             Text {
@@ -127,7 +128,7 @@ component SidebarButton {
                 font-size: 14px;
                 vertical-alignment: center;
                 horizontal-alignment: left;
-                color: root.active ? #1060d0 : #333333;
+                color: root.active ? (root.dark-theme ? #60a5fa : #1060d0) : (root.dark-theme ? #cccccc : #333333);
             }
         }
     }
@@ -136,18 +137,19 @@ component SidebarButton {
 component ActionButton {
     in property <string> text;
     in property <bool> primary: false;
+    in property <bool> dark-theme: false;
     callback clicked();
     preferred-height: 32px;
     min-width: 140px;
     Rectangle {
-        background: root.primary ? #1060d0 : #e0e0e0;
+        background: root.primary ? #1060d0 : (root.dark-theme ? #3d3d3d : #e0e0e0);
         border-radius: 4px;
         TouchArea {
             clicked => { root.clicked(); }
             Text {
                 text: root.text;
                 font-size: 13px;
-                color: root.primary ? #ffffff : #333333;
+                color: root.primary ? #ffffff : (root.dark-theme ? #cccccc : #333333);
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
@@ -156,6 +158,7 @@ component ActionButton {
 }
 
 component AppsPageContainer {
+    in property <bool> dark-theme: false;
     callback add-app();
     callback delete-app(int);
     callback update-app(int, string, string, string, string);
@@ -167,34 +170,34 @@ component AppsPageContainer {
             VerticalLayout {
                 spacing: 8px;
                 Text { text: "アプリ一覧"; font-size: 16px; font-weight: 600; }
-                ActionButton { text: "+ 追加"; clicked => { root.add-app(); } }
-                Rectangle { height: 1px; background: #e0e0e0; }
+                ActionButton { text: "+ 追加"; dark-theme: root.dark-theme; clicked => { root.add-app(); } }
+                Rectangle { height: 1px; background: root.dark-theme ? #444444 : #e0e0e0; }
                 Rectangle {
                     VerticalLayout {
                         padding-top: 4px;
                         padding-bottom: 4px;
                         Text {
                             text: "追加/削除は左のリストから行います。";
-                            color: #888888;
+                            color: root.dark-theme ? #999999 : #888888;
                             font-size: 12px;
                         }
                         Text {
                             text: "詳細編集は右のフォームで行います。";
-                            color: #888888;
+                            color: root.dark-theme ? #999999 : #888888;
                             font-size: 12px;
                         }
                     }
                 }
             }
         }
-        Rectangle { width: 1px; background: #e0e0e0; }
+        Rectangle { width: 1px; background: root.dark-theme ? #444444 : #e0e0e0; }
         Rectangle {
             VerticalLayout {
                 spacing: 12px;
                 Text { text: "アプリ編集"; font-size: 16px; font-weight: 600; }
                 Text {
                     text: "アプリの追加・編集は将来実装予定です。";
-                    color: #888888;
+                    color: root.dark-theme ? #999999 : #888888;
                     font-size: 13px;
                 }
             }
@@ -240,6 +243,7 @@ component ProtocolsPage {
 
 component ManagementPage {
     in-out property <bool> dirty;
+    in property <bool> dark-theme: false;
     callback apply();
     callback unregister();
     callback doctor();
@@ -250,24 +254,24 @@ component ManagementPage {
     VerticalLayout {
         spacing: 16px;
         Text { text: "管理"; font-size: 18px; font-weight: 700; }
-        Rectangle { height: 1px; background: #e0e0e0; }
+        Rectangle { height: 1px; background: root.dark-theme ? #444444 : #e0e0e0; }
         HorizontalLayout {
             spacing: 12px;
-            ActionButton { text: "保存"; primary: root.dirty; clicked => { root.save-config(); } }
+            ActionButton { text: "保存"; primary: root.dirty; dark-theme: root.dark-theme; clicked => { root.save-config(); } }
         }
-        Rectangle { height: 1px; background: #e0e0e0; }
+        Rectangle { height: 1px; background: root.dark-theme ? #444444 : #e0e0e0; }
         Text { text: "レジストリ操作"; font-size: 15px; font-weight: 600; }
         HorizontalLayout {
             spacing: 12px;
-            ActionButton { text: "適用 (apply)"; clicked => { root.apply(); } }
-            ActionButton { text: "解除 (unregister)"; clicked => { root.unregister(); } }
-            ActionButton { text: "診断 (doctor)"; clicked => { root.doctor(); } }
+            ActionButton { text: "適用 (apply)"; dark-theme: root.dark-theme; clicked => { root.apply(); } }
+            ActionButton { text: "解除 (unregister)"; dark-theme: root.dark-theme; clicked => { root.unregister(); } }
+            ActionButton { text: "診断 (doctor)"; dark-theme: root.dark-theme; clicked => { root.doctor(); } }
         }
         Text { text: "バックアップ"; font-size: 15px; font-weight: 600; }
         HorizontalLayout {
             spacing: 12px;
-            ActionButton { text: "バックアップ"; clicked => { root.backup(); } }
-            ActionButton { text: "復元 (restore)"; clicked => { root.restore(); } }
+            ActionButton { text: "バックアップ"; dark-theme: root.dark-theme; clicked => { root.backup(); } }
+            ActionButton { text: "復元 (restore)"; dark-theme: root.dark-theme; clicked => { root.restore(); } }
         }
     }
 }
@@ -284,6 +288,7 @@ export component Settings inherits Window {
     in property <[RouteEntry]> exts: [];
     in property <[RouteEntry]> protocols: [];
     in-out property <int> selected-app: -1;
+    in-out property <bool> dark-theme: false;
 
     callback apply();
     callback unregister();
@@ -299,13 +304,13 @@ export component Settings inherits Window {
         HorizontalLayout {
             Rectangle {
                 width: 180px;
-                background: #f3f3f3;
+                background: root.dark-theme ? #2d2d2d : #f3f3f3;
                 VerticalLayout {
                     padding: 8px;
-                    SidebarButton { text: "アプリ"; active: root.current-page == Page.apps; clicked => { root.current-page = Page.apps; } }
-                    SidebarButton { text: "拡張子"; active: root.current-page == Page.extensions; clicked => { root.current-page = Page.extensions; } }
-                    SidebarButton { text: "プロトコル"; active: root.current-page == Page.protocols; clicked => { root.current-page = Page.protocols; } }
-                    SidebarButton { text: "管理"; active: root.current-page == Page.management; clicked => { root.current-page = Page.management; } }
+                    SidebarButton { text: "アプリ"; active: root.current-page == Page.apps; dark-theme: root.dark-theme; clicked => { root.current-page = Page.apps; } }
+                    SidebarButton { text: "拡張子"; active: root.current-page == Page.extensions; dark-theme: root.dark-theme; clicked => { root.current-page = Page.extensions; } }
+                    SidebarButton { text: "プロトコル"; active: root.current-page == Page.protocols; dark-theme: root.dark-theme; clicked => { root.current-page = Page.protocols; } }
+                    SidebarButton { text: "管理"; active: root.current-page == Page.management; dark-theme: root.dark-theme; clicked => { root.current-page = Page.management; } }
                 }
             }
             Rectangle {
@@ -313,6 +318,7 @@ export component Settings inherits Window {
                     padding: 24px;
                     spacing: 12px;
                     if (root.current-page == Page.apps) : AppsPageContainer {
+                        dark-theme: root.dark-theme;
                         add-app => { root.add-app(); }
                         delete-app(idx) => { root.delete-app(idx); }
                     }
@@ -320,6 +326,7 @@ export component Settings inherits Window {
                     if (root.current-page == Page.protocols) : ProtocolsPage { }
                     if (root.current-page == Page.management) : ManagementPage {
                         dirty: root.dirty;
+                        dark-theme: root.dark-theme;
                         apply => { root.apply(); }
                         unregister => { root.unregister(); }
                         doctor => { root.doctor(); }
@@ -335,7 +342,7 @@ export component Settings inherits Window {
         }
         Rectangle {
             height: 32px;
-            background: #f9f9f9;
+            background: root.dark-theme ? #2d2d2d : #f9f9f9;
             HorizontalLayout {
                 padding-left: 12px;
                 padding-right: 12px;
