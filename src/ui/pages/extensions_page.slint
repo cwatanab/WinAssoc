@@ -1,0 +1,287 @@
+import { Theme } from "../theme.slint";
+import { FluentIcon } from "../icons.slint";
+import { RuleEntry } from "../data.slint";
+import { ListView } from "std-widgets.slint";
+import { Card } from "../components/card.slint";
+import { TextField } from "../components/text_field.slint";
+import { AccentButton } from "../components/accent_button.slint";
+import { ComboBox } from "../components/combo_box.slint";
+import { RuleRow } from "../components/rule_row.slint";
+import { InfoBadge, BadgeKind } from "../components/info_badge.slint";
+
+export component ExtensionsPage inherits Rectangle {
+    in property <[string]> app-names: [];
+    in-out property <string> new-key: "";
+    in property <[string]> route-keys: [];
+    in property <[string]> candidates: [];
+    in property <[RuleEntry]> rules: [];
+    in property <string> current-default: "";
+    in property <string> default-error: "";
+    in property <string> candidates-error: "";
+    in-out property <string> new-candidate: "";
+    in-out property <int> selected: -1;
+    in property <int> selected-rule: -1;
+    callback add-route(string);
+    callback remove-route(int);
+    callback select-route(int);
+    callback add-rule(string);
+    callback remove-rule(string, int);
+    callback move-rule(string, int, int);
+    callback add-candidate(string, string);
+    callback remove-candidate(string, string);
+    callback update-default(string, string);
+
+    background: transparent;
+    HorizontalLayout {
+        spacing: Theme.spacing-l * 1px;
+        width: parent.width;
+        Rectangle {
+            width: 240px;
+            background: transparent;
+            VerticalLayout {
+                spacing: Theme.spacing-xs * 1px;
+                height: parent.height;
+                Text {
+                    text: "拡張子を追加";
+                    font-family: Theme.font-family;
+                    font-size: 12px;
+                    color: Theme.current.text-secondary;
+                }
+                HorizontalLayout {
+                    spacing: Theme.spacing-xs * 1px;
+                    TextField {
+                        width: parent.width - 96px;
+                        value <=> root.new-key;
+                        placeholder: ".ext";
+                    }
+                    AccentButton {
+                        text: "追加";
+                        width: 92px;
+                        clicked => { root.add-route(root.new-key); root.new-key = ""; }
+                    }
+                }
+                Rectangle { height: 1px; background: Theme.current.control-stroke; }
+                ListView {
+                    height: parent.height;
+                    for key[i] in root.route-keys: Rectangle {
+                        height: 36px;
+                        border-radius: Theme.radius-control * 1px;
+                        background: root.selected == i ? Theme.current.nav-selected
+                            : item-area.has-hover ? Theme.current.nav-hover-reveal
+                            : transparent;
+                        animate background { duration: 150ms; }
+                        item-area := TouchArea {
+                            clicked => { root.selected = i; root.select-route(i); }
+                        }
+                        HorizontalLayout {
+                            padding-left: Theme.spacing-s * 1px;
+                            padding-right: Theme.spacing-s * 1px;
+                            spacing: Theme.spacing-s * 1px;
+                            width: parent.width;
+                            height: parent.height;
+                            Text {
+                                text: key;
+                                font-family: Theme.font-family-mono;
+                                font-size: 13px;
+                                color: Theme.current.text-primary;
+                                vertical-alignment: center;
+                                height: parent.height;
+                                width: parent.width - 32px;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Rectangle {
+            width: parent.width - 240px - Theme.spacing-l * 1px;
+            background: transparent;
+            if (root.selected >= 0 && root.selected < root.route-keys.length) : Card {
+                VerticalLayout {
+                    padding: Theme.spacing-l * 1px;
+                    spacing: Theme.spacing-l * 1px;
+                    HorizontalLayout {
+                        spacing: Theme.spacing-s * 1px;
+                        width: parent.width;
+                        Text {
+                            text: "拡張子: " + root.route-keys[root.selected];
+                            font-family: Theme.font-family-mono;
+                            font-size: 18px;
+                            font-weight: 600;
+                            color: Theme.current.text-primary;
+                            vertical-alignment: center;
+                            height: parent.height;
+                            width: parent.width - 120px;
+                        }
+                        AccentButton {
+                            text: "削除";
+                            destructive: true;
+                            clicked => { root.remove-route(root.selected); root.selected = -1; }
+                        }
+                    }
+                    Rectangle { height: 1px; background: Theme.current.control-stroke; }
+                    VerticalLayout {
+                        spacing: Theme.spacing-xs * 1px;
+                        Text {
+                            text: "デフォルトアプリ";
+                            font-family: Theme.font-family;
+                            font-size: 12px;
+                            color: Theme.current.text-secondary;
+                        }
+                        HorizontalLayout {
+                            spacing: Theme.spacing-s * 1px;
+                            width: parent.width;
+                            ComboBox {
+                                width: parent.width - 240px;
+                                model: root.app-names;
+                                current-value: root.current-default;
+                                selected(v) => { root.update-default(root.route-keys[root.selected], v); }
+                            }
+                            if (root.default-error != "") : InfoBadge {
+                                text: root.default-error;
+                                kind: BadgeKind.critical;
+                                width: 240px;
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: Theme.spacing-xs * 1px;
+                        Text {
+                            text: "候補 (" + root.candidates.length + ")";
+                            font-family: Theme.font-family;
+                            font-size: 12px;
+                            color: Theme.current.text-secondary;
+                        }
+                        HorizontalLayout {
+                            spacing: Theme.spacing-xs * 1px;
+                            width: parent.width;
+                            TextField {
+                                width: parent.width - 96px;
+                                value <=> root.new-candidate;
+                                placeholder: "アプリ名";
+                            }
+                            AccentButton {
+                                text: "追加";
+                                width: 92px;
+                                clicked => {
+                                    if (root.new-candidate != "") {
+                                        root.add-candidate(root.route-keys[root.selected], root.new-candidate);
+                                        root.new-candidate = "";
+                                    }
+                                }
+                            }
+                        }
+                        if (root.candidates-error != "") : InfoBadge {
+                            text: root.candidates-error;
+                            kind: BadgeKind.critical;
+                        }
+                        Rectangle {
+                            height: 120px;
+                            background: Theme.current.control-secondary;
+                            border-radius: Theme.radius-control * 1px;
+                            ListView {
+                                width: parent.width;
+                                height: parent.height;
+                                for cand[i] in root.candidates: Rectangle {
+                                    height: 28px;
+                                    HorizontalLayout {
+                                        padding-left: Theme.spacing-s * 1px;
+                                        padding-right: Theme.spacing-s * 1px;
+                                        spacing: Theme.spacing-s * 1px;
+                                        width: parent.width;
+                                        height: parent.height;
+                                        Text {
+                                            text: cand;
+                                            font-family: Theme.font-family-mono;
+                                            font-size: 12px;
+                                            color: Theme.current.text-primary;
+                                            vertical-alignment: center;
+                                            height: parent.height;
+                                            width: parent.width - 32px;
+                                        }
+                                        Rectangle {
+                                            width: 24px;
+                                            height: 24px;
+                                            border-radius: Theme.radius-control * 1px;
+                                            background: del.has-hover ? Theme.current.system-critical : transparent;
+                                            del := TouchArea {
+                                                clicked => { root.remove-candidate(root.route-keys[root.selected], cand); }
+                                            }
+                                            Text {
+                                                text: FluentIcon.delete;
+                                                font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
+                                                font-size: 10px;
+                                                color: del.has-hover ? white : Theme.current.text-secondary;
+                                                horizontal-alignment: center;
+                                                vertical-alignment: center;
+                                                width: parent.width;
+                                                height: parent.height;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: Theme.spacing-xs * 1px;
+                        HorizontalLayout {
+                            spacing: Theme.spacing-s * 1px;
+                            width: parent.width;
+                            Text {
+                                text: "ルール (" + root.rules.length + ")";
+                                font-family: Theme.font-family;
+                                font-size: 12px;
+                                color: Theme.current.text-secondary;
+                                vertical-alignment: center;
+                                height: parent.height;
+                                width: parent.width - 120px;
+                            }
+                            AccentButton {
+                                text: "+ ルール追加";
+                                clicked => { root.add-rule(root.route-keys[root.selected]); }
+                            }
+                        }
+                        if (root.rules.length == 0) : Text {
+                            text: "条件なし。デフォルトアプリで常に開きます。";
+                            font-family: Theme.font-family;
+                            font-size: 12px;
+                            color: Theme.current.text-tertiary;
+                        }
+                        ListView {
+                            height: root.rules.length * 64px + (root.rules.length > 0 ? Theme.spacing-s * 1px * (root.rules.length - 1) : 0px);
+                            for rule[i] in root.rules: RuleRow {
+                                width: parent.width;
+                                app-names: root.app-names;
+                                glob: rule.glob;
+                                host: rule.host;
+                                url: rule.url;
+                                modifier: rule.modifier;
+                                app: rule.app;
+                                pick: rule.pick;
+                                move-up => { root.move-rule(root.route-keys[root.selected], i, -1); }
+                                move-down => { root.move-rule(root.route-keys[root.selected], i, 1); }
+                                delete => { root.remove-rule(root.route-keys[root.selected], i); }
+                            }
+                        }
+                    }
+                }
+            }
+            if (root.selected < 0 || root.selected >= root.route-keys.length) : Rectangle {
+                width: parent.width;
+                height: parent.height;
+                background: transparent;
+                Text {
+                    text: "左側から拡張子を選択してください";
+                    font-family: Theme.font-family;
+                    font-size: 14px;
+                    color: Theme.current.text-tertiary;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: parent.width;
+                    height: parent.height;
+                }
+            }
+        }
+    }
+}

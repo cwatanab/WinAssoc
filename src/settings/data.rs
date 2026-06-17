@@ -16,7 +16,9 @@ pub struct RuleEntry {
 pub struct RouteEntry {
     pub key: String,
     pub default: String,
+    pub default_error: String,
     pub candidates: Vec<String>,
+    pub candidates_error: String,
     pub rules: Vec<RuleEntry>,
 }
 
@@ -51,6 +53,7 @@ pub fn build_route_entries(routes: &std::collections::BTreeMap<String, RouteTabl
         default: table.default.clone().unwrap_or_default(),
         candidates: table.candidates.clone().unwrap_or_default(),
         rules: table.rules.iter().map(rule_to_rule_entry).collect(),
+        ..Default::default()
     }).collect()
 }
 
@@ -162,6 +165,7 @@ mod tests {
             key: ".txt".into(), default: "hidemaru".into(),
             candidates: vec!["hidemaru".into(), "vscode".into()],
             rules: vec![RuleEntry { modifier: "shift".into(), pick: true, ..Default::default() }],
+            ..Default::default()
         };
         let table = route_entry_to_table(&entry);
         assert_eq!(table.default, Some("hidemaru".to_string()));

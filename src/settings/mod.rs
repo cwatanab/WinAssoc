@@ -10,6 +10,7 @@ use crate::platform;
 
 pub mod apps;
 pub mod data;
+pub mod ext;
 pub mod theme;
 pub mod validation;
 
