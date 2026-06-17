@@ -1,0 +1,36 @@
+import { Theme } from "../theme.slint";
+import { CommandBar } from "command_bar.slint";
+
+export component TitleBar inherits Rectangle {
+    in property <string> title: "WinAssoc 設定";
+    in property <bool> dirty: false;
+    in property <string> theme-icon: "";
+    callback refresh-clicked();
+    callback save-clicked();
+    callback apply-clicked();
+    callback theme-clicked();
+    height: 32px;
+    background: transparent;
+    HorizontalLayout {
+        padding-left: Theme.spacing-m * 1px;
+        width: parent.width;
+        Text {
+            text: root.title + (root.dirty ? " ●" : "");
+            font-family: Theme.font-family;
+            font-size: 12px;
+            font-weight: 400;
+            color: Theme.current.text-secondary;
+            vertical-alignment: center;
+            width: 240px;
+            height: parent.height;
+        }
+        CommandBar {
+            dirty: root.dirty;
+            theme-icon: root.theme-icon;
+            refresh-clicked => { root.refresh-clicked(); }
+            save-clicked => { root.save-clicked(); }
+            apply-clicked => { root.apply-clicked(); }
+            theme-clicked => { root.theme-clicked(); }
+        }
+    }
+}

@@ -1,0 +1,50 @@
+import { Theme } from "../theme.slint";
+
+export component NavItem inherits Rectangle {
+    in property <string> label: "";
+    in property <string> icon: "";
+    in property <bool> active: false;
+    callback clicked();
+    height: 40px;
+    background: root.active ? Theme.current.nav-selected
+        : area.has-hover ? Theme.current.nav-hover-reveal
+        : transparent;
+    animate background { duration: 150ms; }
+    area := TouchArea {
+        width: 100%;
+        height: 100%;
+        clicked => { root.clicked(); }
+    }
+    HorizontalLayout {
+        padding-left: Theme.spacing-m * 1px;
+        padding-right: Theme.spacing-m * 1px;
+        spacing: Theme.spacing-m * 1px;
+        width: parent.width;
+        Text {
+            text: root.icon;
+            font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
+            font-size: 16px;
+            color: root.active ? Theme.current.accent-default : Theme.current.text-secondary;
+            vertical-alignment: center;
+            width: 16px;
+            height: 16px;
+        }
+        Text {
+            text: root.label;
+            font-family: Theme.font-family;
+            font-size: 14px;
+            font-weight: root.active ? 600 : 400;
+            color: Theme.current.text-primary;
+            vertical-alignment: center;
+            width: parent.width - 16px - Theme.spacing-m * 1px * 2;
+            height: 16px;
+        }
+    }
+    if (root.active) : Rectangle {
+        x: 0;
+        y: 0;
+        width: 3px;
+        height: parent.height;
+        background: Theme.current.nav-indicator;
+    }
+}
