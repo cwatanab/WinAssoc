@@ -1,0 +1,136 @@
+import { Theme } from "../theme.slint";
+import { FluentIcon } from "../icons.slint";
+import { AppEntry } from "../data.slint";
+import { ListView } from "std-widgets.slint";
+import { Card } from "../components/card.slint";
+import { TextField } from "../components/text_field.slint";
+import { AccentButton } from "../components/accent_button.slint";
+import { InfoBadge, BadgeKind } from "../components/info_badge.slint";
+
+export component AppsPage inherits Rectangle {
+    in property <[AppEntry]> apps: [];
+    in property <[image]> app-icons: [];
+    in-out property <int> selected: -1;
+    callback add-app();
+    callback delete-app(int);
+    callback duplicate-app(int);
+    callback update-app(int, string, string, [string], string);
+
+    background: transparent;
+    HorizontalLayout {
+        spacing: Theme.spacing-l * 1px;
+        width: parent.width;
+        Rectangle {
+            width: 320px;
+            background: transparent;
+            VerticalLayout {
+                spacing: Theme.spacing-xs * 1px;
+                AccentButton { text: "+ アプリを追加"; clicked => { root.add-app(); } }
+                Rectangle { height: 1px; background: Theme.current.control-stroke; }
+                ListView {
+                    for app[i] in root.apps: Rectangle {
+                        height: 48px;
+                        border-radius: Theme.radius-control * 1px;
+                        background: root.selected == i ? Theme.current.nav-selected
+                            : item-area.has-hover ? Theme.current.nav-hover-reveal
+                            : transparent;
+                        animate background { duration: 150ms; }
+                        item-area := TouchArea {
+                            clicked => { root.selected = i; }
+                        }
+                        HorizontalLayout {
+                            padding-left: Theme.spacing-s * 1px;
+                            padding-right: Theme.spacing-s * 1px;
+                            spacing: Theme.spacing-s * 1px;
+                            width: parent.width;
+                            if (i < root.app-icons.length) : Image {
+                                source: root.app-icons[i];
+                                width: 24px;
+                                height: 24px;
+                                image-fit: contain;
+                            }
+                            VerticalLayout {
+                                spacing: 0px;
+                                width: parent.width - 24px - Theme.spacing-s * 1px * 2;
+                                height: parent.height;
+                                Text {
+                                    text: app.name;
+                                    font-family: Theme.font-family;
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    color: Theme.current.text-primary;
+                                    vertical-alignment: center;
+                                    height: 20px;
+                                }
+                                if (app.label != "") : Text {
+                                    text: app.label;
+                                    font-family: Theme.font-family;
+                                    font-size: 12px;
+                                    color: Theme.current.text-secondary;
+                                    height: 16px;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Rectangle {
+            width: parent.width - 320px - Theme.spacing-l * 1px;
+            background: transparent;
+            if (root.selected >= 0 && root.selected < root.apps.length) : Card {
+                VerticalLayout {
+                    padding: Theme.spacing-l * 1px;
+                    spacing: Theme.spacing-l * 1px;
+                    Text { text: "アプリ編集"; font-family: Theme.font-family; font-size: 20px; font-weight: 600; color: Theme.current.text-primary; }
+                    VerticalLayout {
+                        spacing: Theme.spacing-xs * 1px;
+                        Text { text: "名前"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-secondary; }
+                        HorizontalLayout {
+                            spacing: Theme.spacing-s * 1px;
+                            TextField {
+                                width: parent.width - 120px - Theme.spacing-s * 1px;
+                                value: root.apps[root.selected].name;
+                                error: root.apps[root.selected].name-error;
+                                accepted(v) => {
+                                    root.update-app(root.selected, v, root.apps[root.selected].cmd, root.apps[root.selected].args, root.apps[root.selected].label);
+                                }
+                            }
+                            if (root.apps[root.selected].name-error != "") : InfoBadge {
+                                text: root.apps[root.selected].name-error;
+                                kind: BadgeKind.critical;
+                                width: 120px;
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: Theme.spacing-xs * 1px;
+                        Text { text: "実行ファイル"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-secondary; }
+                        TextField {
+                            value: root.apps[root.selected].cmd;
+                            error: root.apps[root.selected].cmd-error;
+                            accepted(v) => {
+                                root.update-app(root.selected, root.apps[root.selected].name, v, root.apps[root.selected].args, root.apps[root.selected].label);
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: Theme.spacing-xs * 1px;
+                        Text { text: "表示ラベル (任意)"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-secondary; }
+                        TextField {
+                            value: root.apps[root.selected].label;
+                            accepted(v) => {
+                                root.update-app(root.selected, root.apps[root.selected].name, root.apps[root.selected].cmd, root.apps[root.selected].args, v);
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: Theme.spacing-s * 1px;
+                        AccentButton { text: "複製"; clicked => { root.duplicate-app(root.selected); } }
+                        AccentButton { text: "削除"; destructive: true; clicked => { root.delete-app(root.selected); } }
+                    }
+                }
+            }
+        }
+    }
+}

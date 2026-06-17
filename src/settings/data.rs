@@ -20,12 +20,29 @@ pub struct RouteEntry {
     pub rules: Vec<RuleEntry>,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct AppEntry {
     pub name: String,
     pub cmd: String,
     pub args: Vec<String>,
     pub label: String,
+    pub icon: slint::Image,
+    pub name_error: String,
+    pub cmd_error: String,
+}
+
+impl Default for AppEntry {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            cmd: String::new(),
+            args: Vec::new(),
+            label: String::new(),
+            icon: slint::Image::default(),
+            name_error: String::new(),
+            cmd_error: String::new(),
+        }
+    }
 }
 
 pub fn build_route_entries(routes: &std::collections::BTreeMap<String, RouteTable>) -> Vec<RouteEntry> {
@@ -73,6 +90,7 @@ pub fn build_app_entries(apps: &std::collections::BTreeMap<String, crate::config
         cmd: def.cmd.clone(),
         args: def.args.clone(),
         label: def.label.clone().unwrap_or_default(),
+        ..Default::default()
     }).collect()
 }
 
@@ -92,7 +110,7 @@ mod tests {
     use crate::config::AppDef;
 
     #[test] fn app_entry_round_trip() {
-        let entry = AppEntry { name: "test".into(), cmd: "C:\\bin\\app.exe".into(), args: vec!["--foo".into(), "{target}".into()], label: "Label".into() };
+        let entry = AppEntry { name: "test".into(), cmd: "C:\\bin\\app.exe".into(), args: vec!["--foo".into(), "{target}".into()], label: "Label".into(), ..Default::default() };
         let def = app_entry_to_def(&entry);
         assert_eq!(def.cmd, "C:\\bin\\app.exe");
         assert_eq!(def.args, vec!["--foo", "{target}"]);

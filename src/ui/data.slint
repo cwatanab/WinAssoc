@@ -1,0 +1,37 @@
+export struct AppEntry {
+    name: string,
+    cmd: string,
+    args: [string],
+    label: string,
+    icon: image,
+    name-error: string,
+    cmd-error: string,
+}
+
+export struct RuleEntry {
+    glob: string,
+    host: string,
+    url: string,
+    modifier: string,
+    app: string,
+    pick: bool,
+    error: string,
+}
+
+export struct ExtEntry {
+    key: string,
+    default: string,
+    default-error: string,
+    candidates: [string],
+    candidates-error: string,
+    rules: [RuleEntry],
+}
+
+export struct ProtoEntry {
+    scheme: string,
+    default: string,
+    default-error: string,
+    candidates: [string],
+    candidates-error: string,
+    rules: [RuleEntry],
+}
