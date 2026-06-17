@@ -8,6 +8,7 @@ use slint::ComponentHandle;
 use crate::error::Result;
 use crate::platform;
 
+pub mod data;
 pub mod theme;
 pub mod validation;
 
