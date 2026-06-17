@@ -1,0 +1,117 @@
+// Fluent Design 2 トークン — Light / Dark
+
+export enum ThemeMode { system, light, dark }
+
+export struct ThemeColors {
+    bg-mica: brush,
+    bg-acrylic: brush,
+    bg-card: brush,
+    bg-sidebar: brush,
+    layer-on-acrylic: brush,
+    text-primary: brush,
+    text-secondary: brush,
+    text-tertiary: brush,
+    text-accent: brush,
+    text-on-accent: brush,
+    control-default: brush,
+    control-secondary: brush,
+    control-tertiary: brush,
+    control-stroke: brush,
+    control-focus-stroke: brush,
+    accent-default: brush,
+    accent-secondary: brush,
+    accent-tertiary: brush,
+    system-success: brush,
+    system-caution: brush,
+    system-critical: brush,
+    system-attention: brush,
+    nav-selected: brush,
+    nav-hover-reveal: brush,
+    nav-indicator: brush,
+}
+
+export global Theme {
+    in-out property <ThemeMode> mode: ThemeMode.system;
+    in property <ThemeColors> light: {
+        bg-mica: #f3f3f3,
+        bg-acrylic: #ffffffb3,
+        bg-card: #ffffff,
+        bg-sidebar: #f3f3f3cc,
+        layer-on-acrylic: #ffffff,
+        text-primary: #1c1c1c,
+        text-secondary: #5d5d5d,
+        text-tertiary: #8a8a8a,
+        text-accent: #005fb8,
+        text-on-accent: #ffffff,
+        control-default: #ffffff,
+        control-secondary: #efefef,
+        control-tertiary: #e5e5e5,
+        control-stroke: #c5c5c5,
+        control-focus-stroke: #005fb8,
+        accent-default: #0078d4,
+        accent-secondary: #2189d8,
+        accent-tertiary: #b3def9,
+        system-success: #0f7b0f,
+        system-caution: #9d5d00,
+        system-critical: #c42b1c,
+        system-attention: #0078d4,
+        nav-selected: #e5e5e5cc,
+        nav-hover-reveal: #0000000d,
+        nav-indicator: #0078d4,
+    };
+    in property <ThemeColors> dark: {
+        bg-mica: #202020,
+        bg-acrylic: #2c2c2cb3,
+        bg-card: #2c2c2c,
+        bg-sidebar: #1c1c1ccc,
+        layer-on-acrylic: #2c2c2c,
+        text-primary: #ffffff,
+        text-secondary: #c5c5c5,
+        text-tertiary: #8a8a8a,
+        text-accent: #5cc2ff,
+        text-on-accent: #000000,
+        control-default: #2c2c2c,
+        control-secondary: #1c1c1c,
+        control-tertiary: #2c2c2c,
+        control-stroke: #4d4d4d,
+        control-focus-stroke: #5cc2ff,
+        accent-default: #4cc2ff,
+        accent-secondary: #62cdff,
+        accent-tertiary: #0078d4,
+        system-success: #54b054,
+        system-caution: #fce100,
+        system-critical: #fc8585,
+        system-attention: #4cc2ff,
+        nav-selected: #2c2c2ccc,
+        nav-hover-reveal: #ffffff0d,
+        nav-indicator: #4cc2ff,
+    };
+    in-out property <ThemeColors> current: Theme.light;
+
+    in property <string> font-family: "Segoe UI Variable Text, Segoe UI, sans-serif";
+    in property <string> font-family-mono: "Cascadia Mono, Consolas, monospace";
+
+    in property <int> spacing-xxs: 2;
+    in property <int> spacing-xs: 4;
+    in property <int> spacing-s: 8;
+    in property <int> spacing-m: 12;
+    in property <int> spacing-l: 16;
+    in property <int> spacing-xl: 20;
+    in property <int> spacing-xxl: 24;
+    in property <int> spacing-xxxl: 32;
+
+    in property <int> radius-control: 4;
+    in property <int> radius-card: 8;
+    in property <int> radius-flyout: 8;
+    in property <int> radius-window: 8;
+
+    public function refresh(os-dark: bool) {
+        if (self.mode == ThemeMode.system) {
+            self.current = os-dark ? Theme.dark : Theme.light;
+        } else if (self.mode == ThemeMode.dark) {
+            self.current = Theme.dark;
+        } else {
+            self.current = Theme.light;
+        }
+    }
+}
