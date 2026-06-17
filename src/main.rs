@@ -5,7 +5,7 @@ use winassoc::error::Result;
 use clap::{Arg, Command};
 
 use winassoc::config::{self, Config};
-use winassoc::{commands, logging, registry};
+use winassoc::{commands, logging, registry, settings};
 
 fn build_cli() -> Command {
     Command::new("winassoc")
@@ -58,6 +58,11 @@ fn build_cli() -> Command {
 }
 
 fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() == 1 {
+        return settings::run();
+    }
+
     let matches = build_cli().get_matches();
     let config_path = match matches.get_one::<String>("config") {
         Some(path) => PathBuf::from(path),

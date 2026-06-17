@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use crate::error::{Error, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 mod validate;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     #[serde(default)]
@@ -19,7 +19,7 @@ pub struct Config {
     pub settings: Settings,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Settings {
     /// 未フォーカス起動時の自動終了タイムアウト時間 (ミリ秒)
@@ -39,7 +39,7 @@ fn default_picker_timeout_ms() -> u64 {
     5000
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AppDef {
     pub cmd: String,
@@ -51,7 +51,7 @@ pub struct AppDef {
     pub label: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RouteTable {
     #[serde(default)]
@@ -63,7 +63,7 @@ pub struct RouteTable {
 }
 
 /// 条件キーは複数指定で AND。アクションは `app` か `pick` のどちらか一方
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Rule {
     pub glob: Option<String>,
@@ -116,6 +116,15 @@ impl Config {
             .map_err(|e| Error::new(format!("設定ファイルの形式が不正です: {}: {}", path.display(), e)))?;
         config.validate()?;
         Ok(config)
+    }
+
+    pub fn default_config() -> Self {
+        Self {
+            apps: Default::default(),
+            ext: Default::default(),
+            protocol: Default::default(),
+            settings: Settings::default(),
+        }
     }
 
     pub fn validate(&self) -> Result<()> {

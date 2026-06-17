@@ -8,9 +8,8 @@ use std::sync::mpsc;
 use crate::error::{Error, Result};
 use crate::{icon, platform};
 
-slint::include_modules!();
-
-use crate::picker::slint_generatedPicker::CandidateData as SlintCandidateData;
+use slint::ComponentHandle;
+use crate::CandidateData as SlintCandidateData;
 
 const ICON_SIZE: i32 = 64;
 
@@ -49,7 +48,7 @@ pub fn show(target_label: String, candidates: Vec<Candidate>, _timeout_ms: u64) 
         }
     }).collect();
 
-    let ui = Picker::new()
+    let ui = crate::Picker::new()
         .map_err(|e| Error::new(format!("ピッカーの起動に失敗しました: {e}")))?;
 
     let candidate_model = std::rc::Rc::new(slint::VecModel::from(candidate_data));

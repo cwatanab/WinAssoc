@@ -87,3 +87,86 @@ export component Picker inherits Window {
         }
     }
 }
+
+component SidebarItem {
+    in property <string> text;
+    preferred-height: 40px;
+    Rectangle {
+        TouchArea {
+            Text {
+                text: root.text;
+                font-size: 14px;
+                vertical-alignment: center;
+                horizontal-alignment: left;
+            }
+        }
+    }
+}
+
+export component Settings inherits Window {
+    preferred-width: 960px;
+    preferred-height: 680px;
+    title: "WinAssoc 設定";
+
+    in-out property <bool> dirty: false;
+    in property <string> config-path: "";
+
+    callback apply();
+    callback unregister();
+    callback doctor();
+    callback backup();
+    callback restore();
+    callback save-config();
+
+    VerticalLayout {
+        HorizontalLayout {
+            Rectangle {
+                width: 180px;
+                background: #f3f3f3;
+                VerticalLayout {
+                    padding: 0;
+                    SidebarItem { text: "アプリ"; }
+                    SidebarItem { text: "拡張子"; }
+                    SidebarItem { text: "プロトコル"; }
+                    SidebarItem { text: "管理"; }
+                }
+            }
+            Rectangle {
+                VerticalLayout {
+                    padding: 24px;
+                    spacing: 16px;
+                    Text {
+                        text: "WinAssoc 設定";
+                        font-size: 22px;
+                        font-weight: 700;
+                    }
+                    Text {
+                        text: "左のメニューから編集する項目を選択してください。";
+                        font-size: 13px;
+                        color: #888888;
+                    }
+                }
+            }
+        }
+        Rectangle {
+            height: 32px;
+            background: #f9f9f9;
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                Text {
+                    text: root.config-path;
+                    font-size: 11px;
+                    color: #999999;
+                }
+                Text {
+                    text: root.dirty ? " (未保存)" : " (保存済)";
+                    font-size: 11px;
+                    color: root.dirty ? #e08000 : #88aa88;
+                }
+            }
+        }
+    }
+}
