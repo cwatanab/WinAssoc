@@ -25,19 +25,22 @@ pub struct Settings {
     /// 未フォーカス起動時の自動終了タイムアウト時間 (ミリ秒)
     #[serde(default = "default_picker_timeout_ms")]
     pub picker_timeout_ms: u64,
+    /// テーマ モード: "system" (既定) / "light" / "dark"
+    #[serde(default = "default_theme_mode")]
+    pub theme_mode: String,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             picker_timeout_ms: 5000,
+            theme_mode: default_theme_mode(),
         }
     }
 }
 
-fn default_picker_timeout_ms() -> u64 {
-    5000
-}
+fn default_picker_timeout_ms() -> u64 { 5000 }
+fn default_theme_mode() -> String { "system".to_string() }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -155,4 +158,29 @@ pub fn expand_env(input: &str) -> String {
     }
     out.push_str(rest);
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_settings_has_system_theme() {
+        let s = Settings::default();
+        assert_eq!(s.theme_mode, "system");
+        assert_eq!(s.picker_timeout_ms, 5000);
+    }
+
+    #[test]
+    fn deserialize_empty_settings_uses_defaults() {
+        let s: Settings = toml::from_str("").unwrap();
+        assert_eq!(s.theme_mode, "system");
+        assert_eq!(s.picker_timeout_ms, 5000);
+    }
+
+    #[test]
+    fn deserialize_explicit_theme_mode() {
+        let s: Settings = toml::from_str(r#"theme_mode = "dark""#).unwrap();
+        assert_eq!(s.theme_mode, "dark");
+    }
 }
