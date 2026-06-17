@@ -9,6 +9,7 @@ use crate::error::Result;
 use crate::platform;
 
 pub mod theme;
+pub mod validation;
 
 pub fn run() -> Result<()> {
     platform::init_com();
