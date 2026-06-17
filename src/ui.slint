@@ -39,33 +39,15 @@ export component Picker inherits Window {
             if (event.text == Key.LeftArrow && root.candidates.length > 0) {
                 root.selected = Math.mod(root.selected + root.candidates.length - 1, root.candidates.length)
             }
-            if (event.text == Key.Digit1) {
-                root.choose(0)
-            }
-            if (event.text == Key.Digit2) {
-                root.choose(1)
-            }
-            if (event.text == Key.Digit3) {
-                root.choose(2)
-            }
-            if (event.text == Key.Digit4) {
-                root.choose(3)
-            }
-            if (event.text == Key.Digit5) {
-                root.choose(4)
-            }
-            if (event.text == Key.Digit6) {
-                root.choose(5)
-            }
-            if (event.text == Key.Digit7) {
-                root.choose(6)
-            }
-            if (event.text == Key.Digit8) {
-                root.choose(7)
-            }
-            if (event.text == Key.Digit9) {
-                root.choose(8)
-            }
+            if (event.text == Key.Digit1) { root.choose(0) }
+            if (event.text == Key.Digit2) { root.choose(1) }
+            if (event.text == Key.Digit3) { root.choose(2) }
+            if (event.text == Key.Digit4) { root.choose(3) }
+            if (event.text == Key.Digit5) { root.choose(4) }
+            if (event.text == Key.Digit6) { root.choose(5) }
+            if (event.text == Key.Digit7) { root.choose(6) }
+            if (event.text == Key.Digit8) { root.choose(7) }
+            if (event.text == Key.Digit9) { root.choose(8) }
             accept
         }
 
@@ -88,17 +70,164 @@ export component Picker inherits Window {
     }
 }
 
-component SidebarItem {
+enum Page {
+    apps,
+    extensions,
+    protocols,
+    management,
+}
+
+component SidebarButton {
     in property <string> text;
+    in property <bool> active: false;
+    callback clicked();
     preferred-height: 40px;
+
     Rectangle {
+        background: root.active ? #ddedff : #00000000;
         TouchArea {
+            clicked => { root.clicked(); }
             Text {
                 text: root.text;
                 font-size: 14px;
                 vertical-alignment: center;
                 horizontal-alignment: left;
+                color: root.active ? #1060d0 : #333333;
             }
+        }
+    }
+}
+
+component AppsPage {
+    VerticalLayout {
+        spacing: 16px;
+        Text {
+            text: "アプリ一覧";
+            font-size: 18px;
+            font-weight: 700;
+        }
+        Text {
+            text: "アプリの追加・編集は将来実装予定です。";
+            font-size: 13px;
+            color: #888888;
+        }
+    }
+}
+
+component ExtensionsPage {
+    VerticalLayout {
+        spacing: 16px;
+        Text {
+            text: "拡張子ルート";
+            font-size: 18px;
+            font-weight: 700;
+        }
+        Text {
+            text: "拡張子ルートの編集は将来実装予定です。";
+            font-size: 13px;
+            color: #888888;
+        }
+    }
+}
+
+component ProtocolsPage {
+    VerticalLayout {
+        spacing: 16px;
+        Text {
+            text: "プロトコルルート";
+            font-size: 18px;
+            font-weight: 700;
+        }
+        Text {
+            text: "プロトコルルートの編集は将来実装予定です。";
+            font-size: 13px;
+            color: #888888;
+        }
+    }
+}
+
+component ActionButton {
+    in property <string> text;
+    in property <bool> primary: false;
+    callback clicked();
+    preferred-height: 32px;
+    min-width: 140px;
+
+    Rectangle {
+        background: root.primary ? #1060d0 : #e0e0e0;
+        border-radius: 4px;
+        TouchArea {
+            clicked => { root.clicked(); }
+            Text {
+                text: root.text;
+                font-size: 13px;
+                color: root.primary ? #ffffff : #333333;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+component ManagementPage {
+    in-out property <bool> dirty;
+    callback apply();
+    callback unregister();
+    callback doctor();
+    callback backup();
+    callback restore();
+    callback save-config();
+
+    VerticalLayout {
+        spacing: 16px;
+        Text {
+            text: "管理";
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        Rectangle {
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        HorizontalLayout {
+            spacing: 12px;
+            ActionButton {
+                text: "保存";
+                primary: root.dirty;
+                clicked => { root.save-config(); }
+            }
+        }
+
+        Rectangle {
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        Text {
+            text: "レジストリ操作";
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        HorizontalLayout {
+            spacing: 12px;
+            ActionButton { text: "適用 (apply)"; clicked => { root.apply(); } }
+            ActionButton { text: "解除 (unregister)"; clicked => { root.unregister(); } }
+            ActionButton { text: "診断 (doctor)"; clicked => { root.doctor(); } }
+        }
+
+        Text {
+            text: "バックアップ";
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        HorizontalLayout {
+            spacing: 12px;
+            ActionButton { text: "バックアップ"; clicked => { root.backup(); } }
+            ActionButton { text: "復元 (restore)"; clicked => { root.restore(); } }
         }
     }
 }
@@ -108,6 +237,7 @@ export component Settings inherits Window {
     preferred-height: 680px;
     title: "WinAssoc 設定";
 
+    in-out property <Page> current-page: Page.apps;
     in-out property <bool> dirty: false;
     in property <string> config-path: "";
 
@@ -124,26 +254,33 @@ export component Settings inherits Window {
                 width: 180px;
                 background: #f3f3f3;
                 VerticalLayout {
-                    padding: 0;
-                    SidebarItem { text: "アプリ"; }
-                    SidebarItem { text: "拡張子"; }
-                    SidebarItem { text: "プロトコル"; }
-                    SidebarItem { text: "管理"; }
+                    padding: 8px;
+
+                    SidebarButton { text: "アプリ"; active: root.current-page == Page.apps; clicked => { root.current-page = Page.apps; } }
+                    SidebarButton { text: "拡張子"; active: root.current-page == Page.extensions; clicked => { root.current-page = Page.extensions; } }
+                    SidebarButton { text: "プロトコル"; active: root.current-page == Page.protocols; clicked => { root.current-page = Page.protocols; } }
+                    SidebarButton { text: "管理"; active: root.current-page == Page.management; clicked => { root.current-page = Page.management; } }
                 }
             }
             Rectangle {
                 VerticalLayout {
                     padding: 24px;
                     spacing: 16px;
-                    Text {
-                        text: "WinAssoc 設定";
-                        font-size: 22px;
-                        font-weight: 700;
-                    }
-                    Text {
-                        text: "左のメニューから編集する項目を選択してください。";
-                        font-size: 13px;
-                        color: #888888;
+
+                    if (root.current-page == Page.apps) : AppsPage { }
+                    if (root.current-page == Page.extensions) : ExtensionsPage { }
+                    if (root.current-page == Page.protocols) : ProtocolsPage { }
+                    if (root.current-page == Page.management) : ManagementPage {
+                        dirty: root.dirty;
+                        apply => { root.apply(); }
+                        unregister => { root.unregister(); }
+                        doctor => { root.doctor(); }
+                        backup => { root.backup(); }
+                        restore => { root.restore(); }
+                        save-config => {
+                            root.dirty = false;
+                            root.save-config();
+                        }
                     }
                 }
             }

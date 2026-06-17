@@ -20,7 +20,7 @@ pub struct Candidate {
 }
 
 /// ピッカーを表示し、選ばれたアプリ名を返す (None = キャンセル)
-pub fn show(target_label: String, candidates: Vec<Candidate>, _timeout_ms: u64) -> Result<Option<String>> {
+pub fn show(target_label: String, candidates: Vec<Candidate>, timeout_ms: u64) -> Result<Option<String>> {
     if candidates.is_empty() {
         return Ok(None);
     }
@@ -68,6 +68,7 @@ pub fn show(target_label: String, candidates: Vec<Candidate>, _timeout_ms: u64) 
         let tx = tx.clone();
         move || {
             let _ = tx.send(None);
+            let _ = slint::quit_event_loop();
         }
     });
 
@@ -76,7 +77,15 @@ pub fn show(target_label: String, candidates: Vec<Candidate>, _timeout_ms: u64) 
         move |index: i32| {
             let name = candidate_names.get(index as usize).cloned().unwrap_or_default();
             let _ = tx.send(Some(name));
+            let _ = slint::quit_event_loop();
         }
+    });
+
+    let tx_timeout = tx.clone();
+    let timer = slint::Timer::default();
+    timer.start(slint::TimerMode::SingleShot, std::time::Duration::from_millis(timeout_ms), move || {
+        let _ = tx_timeout.send(None);
+        let _ = slint::quit_event_loop();
     });
 
     ui.run()
