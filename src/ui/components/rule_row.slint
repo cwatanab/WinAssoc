@@ -1,0 +1,114 @@
+import { Theme } from "../theme.slint";
+import { FluentIcon } from "../icons.slint";
+import { ComboBox } from "combo_box.slint";
+import { ToggleSwitch } from "toggle_switch.slint";
+import { ConditionChip } from "condition_chip.slint";
+
+export component RuleRow inherits Rectangle {
+    in property <[string]> app-names: [];
+    in property <bool> show-glob: true;
+    in property <bool> show-host: true;
+    in property <bool> show-url: true;
+    in property <bool> show-modifier: true;
+    in-out property <string> glob: "";
+    in-out property <string> host: "";
+    in-out property <string> url: "";
+    in-out property <string> modifier: "";
+    in-out property <string> app: "";
+    in-out property <bool> pick: false;
+    callback move-up();
+    callback move-down();
+    callback delete();
+
+    height: 56px;
+    border-radius: Theme.radius-control * 1px;
+    background: Theme.current.control-secondary;
+    HorizontalLayout {
+        padding: Theme.spacing-s * 1px;
+        spacing: Theme.spacing-s * 1px;
+        width: parent.width;
+        VerticalLayout {
+            spacing: Theme.spacing-xs * 1px;
+            height: parent.height;
+            HorizontalLayout {
+                spacing: Theme.spacing-xs * 1px;
+                if (root.show-glob) : ConditionChip { kind: "glob"; value <=> root.glob; }
+                if (root.show-host) : ConditionChip { kind: "host"; value <=> root.host; }
+                if (root.show-url) : ConditionChip { kind: "url"; value <=> root.url; }
+                if (root.show-modifier) : ConditionChip { kind: "modifier"; value <=> root.modifier; }
+            }
+            HorizontalLayout {
+                spacing: Theme.spacing-s * 1px;
+                ToggleSwitch { checked <=> root.pick; }
+                Text { text: "pick"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-secondary; vertical-alignment: center; }
+                Text { text: "or"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                ComboBox {
+                    model: root.app-names;
+                    enabled: !root.pick;
+                    current-value: root.app;
+                    selected(v) => { root.app = v; }
+                }
+            }
+        }
+        VerticalLayout {
+            spacing: 2px;
+            width: 24px;
+            height: parent.height;
+            Rectangle {
+                width: 24px;
+                height: 20px;
+                background: up-area.has-hover ? Theme.current.nav-hover-reveal : transparent;
+                up-area := TouchArea {
+                    clicked => { root.move-up(); }
+                }
+                Text {
+                    text: FluentIcon.chevron-up;
+                    font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
+                    font-size: 10px;
+                    color: Theme.current.text-secondary;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: parent.width;
+                    height: parent.height;
+                }
+            }
+            Rectangle {
+                width: 24px;
+                height: 20px;
+                background: down-area.has-hover ? Theme.current.nav-hover-reveal : transparent;
+                down-area := TouchArea {
+                    clicked => { root.move-down(); }
+                }
+                Text {
+                    text: FluentIcon.chevron-down;
+                    font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
+                    font-size: 10px;
+                    color: Theme.current.text-secondary;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: parent.width;
+                    height: parent.height;
+                }
+            }
+        }
+        Rectangle {
+            width: 24px;
+            height: 24px;
+            border-radius: Theme.radius-control * 1px;
+            background: del-area.has-hover ? Theme.current.system-critical : transparent;
+            del-area := TouchArea {
+                clicked => { root.delete(); }
+            }
+            Text {
+                text: FluentIcon.delete;
+                font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
+                font-size: 12px;
+                color: del-area.has-hover ? white : Theme.current.text-secondary;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                width: parent.width;
+                height: parent.height;
+            }
+        }
+    }
+}
