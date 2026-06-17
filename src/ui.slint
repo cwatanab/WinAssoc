@@ -66,14 +66,45 @@ export component Picker inherits Window {
             border-radius: 12px;
             VerticalLayout {
                 padding: 18px;
-                spacing: 12px;
+                spacing: 8px;
                 Text {
                     text: root.target-label;
                     color: root.subtle-color;
-                    font-size: 10px;
+                    font-size: 12px;
                 }
                 Rectangle {
-                    height: root.height - 60px;
+                    VerticalLayout {
+                        spacing: 8px;
+                        for tile[i] in root.candidates: Rectangle {
+                            background: root.selected == i ? root.accent-color.with-alpha(0.2) : #00000000;
+                            border-radius: 6px;
+                            min-height: 32px;
+                            HorizontalLayout {
+                                padding-left: 10px;
+                                padding-right: 10px;
+                                padding-top: 6px;
+                                padding-bottom: 6px;
+                                spacing: 10px;
+                                if (i < root.icons.length) : Image {
+                                    source: root.icons[i];
+                                    preferred-width: 24px;
+                                    preferred-height: 24px;
+                                }
+                                VerticalLayout {
+                                    Text {
+                                        text: tile.name;
+                                        font-size: 14px;
+                                        color: root.text-color;
+                                    }
+                                    if (tile.label != "") : Text {
+                                        text: tile.label;
+                                        font-size: 10px;
+                                        color: root.subtle-color;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
