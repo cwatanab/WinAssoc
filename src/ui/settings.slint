@@ -1,3 +1,4 @@
+import "./segmdl2.ttf";
 import { Theme } from "theme.slint";
 import { FluentIcon } from "icons.slint";
 import { AppEntry, ExtEntry, ProtoEntry, RuleEntry } from "data.slint";
@@ -25,6 +26,255 @@ export { Theme, FluentIcon, AppEntry, ExtEntry, ProtoEntry, RuleEntry, AccentBut
 export component Settings inherits Window {
     preferred-width: 1100px;
     preferred-height: 760px;
+    min-width: 900px;
+    min-height: 600px;
     title: "WinAssoc 設定";
     background: Theme.current.bg-mica;
+
+    // ナビゲーション切り替え
+    in-out property <int> active-nav: 0;
+
+    // アプリ定義
+    in property <[AppEntry]> apps: [];
+    in property <[image]> app-icons: [];
+    in-out property <int> selected-app: -1;
+
+    // 拡張子
+    in property <[string]> app-names: [];
+    in property <[string]> route-keys: [];
+    in property <[string]> route-defaults: [];
+    in property <[string]> candidates: [];
+    in property <[RuleEntry]> rules: [];
+    in property <string> current-default: "";
+    in property <string> default-error: "";
+    in property <string> candidates-error: "";
+    in-out property <int> selected-route: -1;
+
+    // プロトコル
+    in property <[string]> proto-route-keys: [];
+    in property <[string]> proto-defaults: [];
+    in property <[string]> proto-candidates: [];
+    in property <[RuleEntry]> proto-rules: [];
+    in property <string> proto-current-default: "";
+    in property <string> proto-default-error: "";
+    in property <string> proto-candidates-error: "";
+    in-out property <int> selected-proto: -1;
+
+    // 管理
+    in property <string> config-path: "";
+    in-out property <int> picker-timeout-ms: 5000;
+    in property <string> theme-mode: "system";
+    in property <[string]> theme-modes: ["system", "light", "dark"];
+    in property <[string]> result-lines: [];
+    in property <bool> result-success: true;
+
+    // 状態
+    in property <bool> dirty: false;
+    in property <string> theme-icon: FluentIcon.system;
+    in-out property <length> sidebar-width: 240px;
+    in-out property <length> list-width: 280px;
+
+    // アソシエーション用アイコンデータ
+    in property <[image]> route-icons: [];
+    in property <[image]> proto-icons: [];
+    in property <image> current-default-icon;
+    in property <image> proto-current-default-icon;
+    in property <[image]> candidates-icons: [];
+    in property <[image]> proto-candidates-icons: [];
+
+    // コールバック (全体)
+    callback refresh-clicked();
+    callback save-clicked();
+    callback apply-clicked();
+    callback theme-clicked();
+
+    // コールバック (アプリ)
+    callback add-app();
+    callback delete-app(int);
+    callback duplicate-app(int);
+    callback update-app(int, string, string, [string], string);
+    callback browse-app-cmd(int);
+
+    // コールバック (拡張子)
+    callback add-route(string);
+    callback remove-route(int);
+    callback select-route(int);
+    callback add-rule(string);
+    callback remove-rule(string, int);
+    callback move-rule(string, int, int);
+    callback add-candidate(string, string);
+    callback remove-candidate(string, string);
+    callback update-default(string, string);
+    callback update-rule(string, int, RuleEntry);
+
+    // コールバック (プロトコル)
+    callback add-protocol(string);
+    callback remove-protocol(int);
+    callback select-protocol(int);
+    callback add-proto-rule(string);
+    callback remove-proto-rule(string, int);
+    callback move-proto-rule(string, int, int);
+    callback add-proto-candidate(string, string);
+    callback remove-proto-candidate(string, string);
+    callback update-proto-default(string, string);
+    callback update-proto-rule(string, int, RuleEntry);
+
+    // コールバック (管理)
+    callback update-picker-timeout(int);
+    callback update-theme-mode(string);
+    callback management-apply-clicked();
+    callback management-unregister-clicked();
+    callback management-doctor-clicked();
+    callback management-backup-clicked();
+    callback management-restore-clicked();
+
+    VerticalLayout {
+        spacing: 0px;
+        
+        HorizontalLayout {
+            // サイドバー
+            Rectangle {
+                width: root.sidebar-width;
+                background: Theme.current.bg-sidebar;
+                
+                VerticalLayout {
+                    padding-top: Theme.spacing-m * 1px;
+                    padding-bottom: Theme.spacing-m * 1px;
+                    spacing: Theme.spacing-xs * 1px;
+                    alignment: start;
+                    
+                    NavItem {
+                        label: "アプリ定義";
+                        icon: FluentIcon.app-folder;
+                        active: root.active-nav == 0;
+                        clicked => { root.active-nav = 0; }
+                    }
+                    NavItem {
+                        label: "拡張子関連付け";
+                        icon: FluentIcon.page;
+                        active: root.active-nav == 1;
+                        clicked => { root.active-nav = 1; }
+                    }
+                    NavItem {
+                        label: "プロトコル関連付け";
+                        icon: FluentIcon.globe;
+                        active: root.active-nav == 2;
+                        clicked => { root.active-nav = 2; }
+                    }
+                    NavItem {
+                        label: "管理";
+                        icon: FluentIcon.settings;
+                        active: root.active-nav == 3;
+                        clicked => { root.active-nav = 3; }
+                    }
+                }
+            }
+            
+            // スプリッターバー
+            Rectangle {
+                width: 4px;
+                background: sidebar-drag.has-hover ? Theme.current.accent-default : transparent;
+                sidebar-drag := TouchArea {
+                    mouse-cursor: MouseCursor.col-resize;
+                    moved => {
+                        root.sidebar-width = Math.max(160px, Math.min(240px, root.sidebar-width + self.mouse-x - self.pressed-x));
+                    }
+                }
+            }
+            
+            // メインコンテンツエリア
+            VerticalLayout {
+                padding: Theme.spacing-l * 1px;
+                
+                if (root.active-nav == 0) : AppsPage {
+                    apps: root.apps;
+                    app-icons: root.app-icons;
+                    selected <=> root.selected-app;
+                    list-width <=> root.list-width;
+                    dirty: root.dirty;
+                    add-app => { root.add-app(); }
+                    delete-app(idx) => { root.delete-app(idx); }
+                    duplicate-app(idx) => { root.duplicate-app(idx); }
+                    update-app(idx, name, cmd, args, label) => { root.update-app(idx, name, cmd, args, label); }
+                    browse-cmd-clicked => { root.browse-app-cmd(root.selected-app); }
+                    save-clicked => { root.save-clicked(); }
+                    apply-clicked => { root.apply-clicked(); }
+                }
+                
+                if (root.active-nav == 1) : ExtensionsPage {
+                    app-names: root.app-names;
+                    route-keys: root.route-keys;
+                    route-icons: root.route-icons;
+                    route-defaults: root.route-defaults;
+                    candidates: root.candidates;
+                    candidates-icons: root.candidates-icons;
+                    rules: root.rules;
+                    current-default: root.current-default;
+                    current-default-icon: root.current-default-icon;
+                    default-error: root.default-error;
+                    candidates-error: root.candidates-error;
+                    selected <=> root.selected-route;
+                    list-width <=> root.list-width;
+                    dirty: root.dirty;
+                    add-route(key) => { root.add-route(key); }
+                    remove-route(idx) => { root.remove-route(idx); }
+                    select-route(idx) => { root.select-route(idx); }
+                    add-rule(key) => { root.add-rule(key); }
+                    remove-rule(key, idx) => { root.remove-rule(key, idx); }
+                    move-rule(key, idx, delta) => { root.move-rule(key, idx, delta); }
+                    add-candidate(key, cand) => { root.add-candidate(key, cand); }
+                    remove-candidate(key, cand) => { root.remove-candidate(key, cand); }
+                    update-default(key, def) => { root.update-default(key, def); }
+                    update-rule(key, idx, entry) => { root.update-rule(key, idx, entry); }
+                    save-clicked => { root.save-clicked(); }
+                    apply-clicked => { root.apply-clicked(); }
+                }
+                
+                if (root.active-nav == 2) : ProtocolsPage {
+                    app-names: root.app-names;
+                    route-keys: root.proto-route-keys;
+                    route-icons: root.proto-icons;
+                    route-defaults: root.proto-defaults;
+                    candidates: root.proto-candidates;
+                    candidates-icons: root.proto-candidates-icons;
+                    rules: root.proto-rules;
+                    current-default: root.proto-current-default;
+                    current-default-icon: root.proto-current-default-icon;
+                    default-error: root.proto-default-error;
+                    candidates-error: root.proto-candidates-error;
+                    selected <=> root.selected-proto;
+                    list-width <=> root.list-width;
+                    dirty: root.dirty;
+                    add-protocol(key) => { root.add-protocol(key); }
+                    remove-protocol(idx) => { root.remove-protocol(idx); }
+                    select-protocol(idx) => { root.select-protocol(idx); }
+                    add-rule(key) => { root.add-proto-rule(key); }
+                    remove-rule(key, idx) => { root.remove-proto-rule(key, idx); }
+                    move-rule(key, idx, delta) => { root.move-proto-rule(key, idx, delta); }
+                    add-candidate(key, cand) => { root.add-proto-candidate(key, cand); }
+                    remove-candidate(key, cand) => { root.remove-proto-candidate(key, cand); }
+                    update-default(key, def) => { root.update-proto-default(key, def); }
+                    update-rule(key, idx, entry) => { root.update-proto-rule(key, idx, entry); }
+                    save-clicked => { root.save-clicked(); }
+                    apply-clicked => { root.apply-clicked(); }
+                }
+                
+                if (root.active-nav == 3) : ManagementPage {
+                    config-path: root.config-path;
+                    picker-timeout-ms <=> root.picker-timeout-ms;
+                    theme-mode: root.theme-mode;
+                    theme-modes: root.theme-modes;
+                    result-lines: root.result-lines;
+                    result-success: root.result-success;
+                    update-picker-timeout(timeout) => { root.update-picker-timeout(timeout); }
+                    update-theme-mode(mode) => { root.update-theme-mode(mode); }
+                    apply-clicked => { root.management-apply-clicked(); }
+                    unregister-clicked => { root.management-unregister-clicked(); }
+                    doctor-clicked => { root.management-doctor-clicked(); }
+                    backup-clicked => { root.management-backup-clicked(); }
+                    restore-clicked => { root.management-restore-clicked(); }
+                }
+            }
+        }
+    }
 }

@@ -111,6 +111,12 @@ pub fn resolve_config_path() -> Result<PathBuf> {
     default_config_path()
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::default_config()
+    }
+}
+
 impl Config {
     pub fn load(path: &Path) -> Result<Config> {
         let text = std::fs::read_to_string(path)
@@ -119,6 +125,17 @@ impl Config {
             .map_err(|e| Error::new(format!("設定ファイルの形式が不正です: {}: {}", path.display(), e)))?;
         config.validate()?;
         Ok(config)
+    }
+
+    pub fn save(&self, path: &Path) -> Result<()> {
+        let text = toml::to_string_pretty(self)?;
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| Error::new(format!("設定フォルダを作成できません: {}: {}", parent.display(), e)))?;
+        }
+        std::fs::write(path, text)
+            .map_err(|e| Error::new(format!("設定ファイルを保存できません: {}: {}", path.display(), e)))?;
+        Ok(())
     }
 
     pub fn default_config() -> Self {

@@ -85,7 +85,7 @@ fn validate_route_table(
             errors.push(ValidationError::EmptyRule { section: section.into(), key: key.into(), rule_idx: idx });
         }
         if let Some(m) = &rule.modifier {
-            if !matches!(m.as_str(), "shift" | "ctrl" | "alt") {
+            if !matches!(m.to_ascii_lowercase().as_str(), "shift" | "ctrl" | "alt") {
                 errors.push(ValidationError::InvalidModifier(m.clone()));
             }
         }

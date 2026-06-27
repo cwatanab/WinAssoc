@@ -11,7 +11,9 @@ toml = "0.8"
 globset = "0.4"
 dirs = "5"
 winreg = "0.55"
-slint = "1"
+slint = { version = "1", features = ["raw-window-handle-06"] }
+raw-window-handle = "0.6"
+icu_provider = { version = "2.2", features = ["logging"] }
 
 [dependencies.windows]
 version = "0.61"

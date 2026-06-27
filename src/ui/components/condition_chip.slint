@@ -5,8 +5,9 @@ import { ComboBox } from "combo_box.slint";
 export component ConditionChip inherits Rectangle {
     in property <string> kind: "glob";
     in-out property <string> value: "";
-    in property <[string]> modifier-options: ["", "shift", "ctrl", "alt"];
+    in property <[string]> modifier-options: ["", "SHIFT", "CTRL", "ALT"];
     in property <bool> show-kind: true;
+    callback accepted(string);
     height: 32px;
     border-radius: Theme.radius-control * 1px;
     background: Theme.current.control-secondary;
@@ -14,7 +15,6 @@ export component ConditionChip inherits Rectangle {
         padding-left: Theme.spacing-s * 1px;
         padding-right: Theme.spacing-s * 1px;
         spacing: Theme.spacing-xs * 1px;
-        width: parent.width;
         if (root.show-kind) : Text {
             text: root.kind + "=";
             font-family: Theme.font-family;
@@ -27,11 +27,12 @@ export component ConditionChip inherits Rectangle {
         if (root.kind == "modifier") : ComboBox {
             model: root.modifier-options;
             current-value: root.value;
-            selected => { root.value = self.current-value; }
+            selected => { root.value = self.current-value; root.accepted(self.current-value); }
         }
         if (root.kind != "modifier") : TextField {
             placeholder: root.kind == "glob" ? "**/*.md" : root.kind == "host" ? "*.example.com" : "https://*";
             value <=> root.value;
+            accepted(v) => { root.accepted(v); }
         }
     }
 }

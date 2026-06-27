@@ -1,7 +1,7 @@
 import { Theme } from "../theme.slint";
 import { FluentIcon } from "../icons.slint";
 import { RuleEntry } from "../data.slint";
-import { ListView } from "std-widgets.slint";
+import { ListView, ScrollView } from "std-widgets.slint";
 import { Card } from "../components/card.slint";
 import { TextField } from "../components/text_field.slint";
 import { AccentButton } from "../components/accent_button.slint";
@@ -13,14 +13,24 @@ export component ProtocolsPage inherits Rectangle {
     in property <[string]> app-names: [];
     in-out property <string> new-key: "";
     in property <[string]> route-keys: [];
+    in property <[image]> route-icons: [];
+    in property <[string]> route-defaults: [];
     in property <[string]> candidates: [];
+    in property <[image]> candidates-icons: [];
     in property <[RuleEntry]> rules: [];
     in property <string> current-default: "";
+    in property <image> current-default-icon;
     in property <string> default-error: "";
     in property <string> candidates-error: "";
     in-out property <string> new-candidate: "";
     in-out property <int> selected: -1;
     in property <int> selected-rule: -1;
+    in-out property <length> list-width: 280px;
+    in property <bool> dirty: false;
+    
+    // タブ状態
+    in-out property <int> active-tab: 0; // 0: 基本設定, 1: ルーティングルール
+    
     callback add-protocol(string);
     callback remove-protocol(int);
     callback select-protocol(int);
@@ -30,79 +40,104 @@ export component ProtocolsPage inherits Rectangle {
     callback add-candidate(string, string);
     callback remove-candidate(string, string);
     callback update-default(string, string);
+    callback update-rule(string, int, RuleEntry);
+    callback save-clicked();
+    callback apply-clicked();
 
     background: transparent;
     HorizontalLayout {
         spacing: Theme.spacing-l * 1px;
-        width: parent.width;
-        Rectangle {
-            width: 240px;
-            background: transparent;
-            VerticalLayout {
+        
+        // 左側：スキームリスト
+        VerticalLayout {
+            min-width: root.list-width;
+            max-width: root.list-width;
+            spacing: Theme.spacing-xs * 1px;
+            Text {
+                text: "スキームを追加";
+                font-family: Theme.font-family;
+                font-size: 12px;
+                color: Theme.current.text-secondary;
+            }
+            HorizontalLayout {
                 spacing: Theme.spacing-xs * 1px;
-                height: parent.height;
-                Text {
-                    text: "スキームを追加";
-                    font-family: Theme.font-family;
-                    font-size: 12px;
-                    color: Theme.current.text-secondary;
+                TextField {
+                    value <=> root.new-key;
+                    placeholder: "scheme";
                 }
-                HorizontalLayout {
-                    spacing: Theme.spacing-xs * 1px;
-                    TextField {
-                        width: parent.width - 96px;
-                        value <=> root.new-key;
-                        placeholder: "scheme";
-                    }
-                    AccentButton {
-                        text: "追加";
-                        width: 92px;
-                        clicked => { root.add-protocol(root.new-key); root.new-key = ""; }
-                    }
+                AccentButton {
+                    text: "追加";
+                    width: 64px;
+                    clicked => { root.add-protocol(root.new-key); root.new-key = ""; }
                 }
-                Rectangle { height: 1px; background: Theme.current.control-stroke; }
-                ListView {
-                    height: parent.height;
-                    for key[i] in root.route-keys: Rectangle {
-                        height: 36px;
-                        border-radius: Theme.radius-control * 1px;
-                        background: root.selected == i ? Theme.current.nav-selected
-                            : item-area.has-hover ? Theme.current.nav-hover-reveal
-                            : transparent;
-                        animate background { duration: 150ms; }
-                        item-area := TouchArea {
-                            clicked => { root.selected = i; root.select-protocol(i); }
+            }
+            Rectangle { height: 1px; background: Theme.current.control-stroke; }
+            ListView {
+                for key[i] in root.route-keys: Rectangle {
+                    height: 44px;
+                    border-radius: Theme.radius-control * 1px;
+                    background: root.selected == i ? Theme.current.nav-selected
+                        : item-area.has-hover ? Theme.current.nav-hover-reveal
+                        : transparent;
+                    animate background { duration: 150ms; }
+                    item-area := TouchArea {
+                        clicked => { root.selected = i; root.active-tab = 0; root.select-protocol(i); }
+                    }
+                    HorizontalLayout {
+                        padding-left: Theme.spacing-s * 1px;
+                        padding-right: Theme.spacing-s * 1px;
+                        spacing: Theme.spacing-s * 1px;
+                        if (i < root.route-icons.length) : VerticalLayout {
+                            alignment: center;
+                            Image {
+                                source: root.route-icons[i];
+                                width: 32px;
+                                height: 32px;
+                                image-fit: contain;
+                            }
                         }
-                        HorizontalLayout {
-                            padding-left: Theme.spacing-s * 1px;
-                            padding-right: Theme.spacing-s * 1px;
-                            spacing: Theme.spacing-s * 1px;
-                            width: parent.width;
-                            height: parent.height;
+                        VerticalLayout {
+                            spacing: 0px;
+                            alignment: center;
                             Text {
                                 text: key;
                                 font-family: Theme.font-family-mono;
-                                font-size: 13px;
+                                font-size: 14px;
+                                font-weight: 600;
                                 color: Theme.current.text-primary;
                                 vertical-alignment: center;
-                                height: parent.height;
-                                width: parent.width - 32px;
+                                height: 20px;
                             }
                         }
                     }
                 }
             }
         }
+        
+        // スプリッターバー
         Rectangle {
-            width: parent.width - 240px - Theme.spacing-l * 1px;
-            background: transparent;
-            if (root.selected >= 0 && root.selected < root.route-keys.length) : Card {
+            width: 4px;
+            background: drag-bar.has-hover ? Theme.current.accent-default : transparent;
+            drag-bar := TouchArea {
+                mouse-cursor: MouseCursor.col-resize;
+                moved => {
+                    root.list-width = Math.max(180px, Math.min(320px, root.list-width + self.mouse-x - self.pressed-x));
+                }
+            }
+        }
+        
+        // 右側：詳細表示
+        Card {
+            horizontal-stretch: 1;
+            if (root.selected >= 0 && root.selected < root.route-keys.length) : ScrollView {
+                viewport-width: self.width;
                 VerticalLayout {
-                    padding: Theme.spacing-l * 1px;
-                    spacing: Theme.spacing-l * 1px;
+                    padding: Theme.spacing-m * 1px;
+                    spacing: Theme.spacing-m * 1px;
+                    alignment: start;
+                    
                     HorizontalLayout {
                         spacing: Theme.spacing-s * 1px;
-                        width: parent.width;
                         Text {
                             text: "スキーム: " + root.route-keys[root.selected];
                             font-family: Theme.font-family-mono;
@@ -110,148 +145,262 @@ export component ProtocolsPage inherits Rectangle {
                             font-weight: 600;
                             color: Theme.current.text-primary;
                             vertical-alignment: center;
-                            height: parent.height;
-                            width: parent.width - 120px;
                         }
+                        Rectangle { } // Spacer
                         AccentButton {
                             text: "削除";
                             destructive: true;
+                            width: 64px;
                             clicked => { root.remove-protocol(root.selected); root.selected = -1; }
                         }
                     }
                     Rectangle { height: 1px; background: Theme.current.control-stroke; }
-                    VerticalLayout {
-                        spacing: Theme.spacing-xs * 1px;
-                        Text {
-                            text: "デフォルトアプリ";
-                            font-family: Theme.font-family;
-                            font-size: 12px;
-                            color: Theme.current.text-secondary;
-                        }
-                        HorizontalLayout {
-                            spacing: Theme.spacing-s * 1px;
-                            width: parent.width;
-                            ComboBox {
-                                width: parent.width - 240px;
-                                model: root.app-names;
-                                current-value: root.current-default;
-                                selected(v) => { root.update-default(root.route-keys[root.selected], v); }
-                            }
-                            if (root.default-error != "") : InfoBadge {
-                                text: root.default-error;
-                                kind: BadgeKind.critical;
-                                width: 240px;
-                            }
-                        }
-                    }
-                    VerticalLayout {
-                        spacing: Theme.spacing-xs * 1px;
-                        Text {
-                            text: "候補 (" + root.candidates.length + ")";
-                            font-family: Theme.font-family;
-                            font-size: 12px;
-                            color: Theme.current.text-secondary;
-                        }
-                        HorizontalLayout {
-                            spacing: Theme.spacing-xs * 1px;
-                            width: parent.width;
-                            TextField {
-                                width: parent.width - 96px;
-                                value <=> root.new-candidate;
-                                placeholder: "アプリ名";
-                            }
-                            AccentButton {
-                                text: "追加";
-                                width: 92px;
-                                clicked => {
-                                    if (root.new-candidate != "") {
-                                        root.add-candidate(root.route-keys[root.selected], root.new-candidate);
-                                        root.new-candidate = "";
-                                    }
-                                }
-                            }
-                        }
-                        if (root.candidates-error != "") : InfoBadge {
-                            text: root.candidates-error;
-                            kind: BadgeKind.critical;
-                        }
+                    
+                    // タブヘッダー
+                    HorizontalLayout {
+                        height: 36px;
+                        spacing: Theme.spacing-s * 1px;
+                        
+                        // タブ 1: 基本設定
                         Rectangle {
-                            height: 120px;
-                            background: Theme.current.control-secondary;
                             border-radius: Theme.radius-control * 1px;
-                            ListView {
-                                width: parent.width;
-                                height: parent.height;
-                                for cand[i] in root.candidates: Rectangle {
-                                    height: 28px;
-                                    HorizontalLayout {
-                                        padding-left: Theme.spacing-s * 1px;
-                                        padding-right: Theme.spacing-s * 1px;
-                                        spacing: Theme.spacing-s * 1px;
-                                        width: parent.width;
-                                        height: parent.height;
-                                        Text {
-                                            text: cand;
-                                            font-family: Theme.font-family-mono;
-                                            font-size: 12px;
-                                            color: Theme.current.text-primary;
-                                            vertical-alignment: center;
-                                            height: parent.height;
-                                            width: parent.width - 32px;
-                                        }
-                                        Rectangle {
-                                            width: 24px;
-                                            height: 24px;
-                                            border-radius: Theme.radius-control * 1px;
-                                            background: del.has-hover ? Theme.current.system-critical : transparent;
-                                            del := TouchArea {
-                                                clicked => { root.remove-candidate(root.route-keys[root.selected], cand); }
-                                            }
-                                            Text {
-                                                text: FluentIcon.delete;
-                                                font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
-                                                font-size: 10px;
-                                                color: del.has-hover ? white : Theme.current.text-secondary;
-                                                horizontal-alignment: center;
-                                                vertical-alignment: center;
-                                                width: parent.width;
-                                                height: parent.height;
-                                            }
-                                        }
-                                    }
+                            background: root.active-tab == 0 ? Theme.current.control-secondary : transparent;
+                            TouchArea { clicked => { root.active-tab = 0; } }
+                            HorizontalLayout {
+                                padding-left: Theme.spacing-m * 1px;
+                                padding-right: Theme.spacing-m * 1px;
+                                Text {
+                                    text: "基本設定";
+                                    font-family: Theme.font-family;
+                                    font-size: 13px;
+                                    font-weight: root.active-tab == 0 ? 600 : 400;
+                                    color: root.active-tab == 0 ? Theme.current.accent-default : Theme.current.text-secondary;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                        
+                        // タブ 2: ルーティングルール
+                        Rectangle {
+                            border-radius: Theme.radius-control * 1px;
+                            background: root.active-tab == 1 ? Theme.current.control-secondary : transparent;
+                            TouchArea { clicked => { root.active-tab = 1; } }
+                            HorizontalLayout {
+                                padding-left: Theme.spacing-m * 1px;
+                                padding-right: Theme.spacing-m * 1px;
+                                Text {
+                                    text: "高度なルール (" + root.rules.length + ")";
+                                    font-family: Theme.font-family;
+                                    font-size: 13px;
+                                    font-weight: root.active-tab == 1 ? 600 : 400;
+                                    color: root.active-tab == 1 ? Theme.current.accent-default : Theme.current.text-secondary;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
                                 }
                             }
                         }
                     }
-                    VerticalLayout {
-                        spacing: Theme.spacing-xs * 1px;
-                        HorizontalLayout {
+                    
+                    Rectangle { height: 1px; background: Theme.current.control-stroke; }
+                    
+                    // タブ 1: 基本設定のコンテンツ
+                    if (root.active-tab == 0) : VerticalLayout {
+                        spacing: Theme.spacing-l * 1px;
+                        
+                        // 候補リストの設定
+                        VerticalLayout {
                             spacing: Theme.spacing-s * 1px;
-                            width: parent.width;
+                            
                             Text {
-                                text: "ルール (" + root.rules.length + ")";
+                                text: "アプリ選択画面の候補リスト";
                                 font-family: Theme.font-family;
                                 font-size: 12px;
+                                font-weight: 600;
                                 color: Theme.current.text-secondary;
-                                vertical-alignment: center;
-                                height: parent.height;
-                                width: parent.width - 120px;
                             }
+                            
+                            Text {
+                                text: "Pick (アプリ選択画面を表示) が有効な場合、またはデフォルトアプリが起動できない場合に表示されるアプリ候補のリストです。";
+                                font-family: Theme.font-family;
+                                font-size: 11px;
+                                color: Theme.current.text-tertiary;
+                                wrap: word-wrap;
+                            }
+                            
+                            HorizontalLayout {
+                                spacing: Theme.spacing-s * 1px;
+                                ComboBox {
+                                    model: root.app-names;
+                                    current-value <=> root.new-candidate;
+                                    horizontal-stretch: 1;
+                                }
+                                AccentButton {
+                                    text: "候補に追加";
+                                    width: 100px;
+                                    clicked => {
+                                        if (root.new-candidate != "") {
+                                            root.add-candidate(root.route-keys[root.selected], root.new-candidate);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (root.candidates-error != "") : InfoBadge {
+                                text: root.candidates-error;
+                                kind: BadgeKind.critical;
+                            }
+                            
+                            // 候補スクロールリスト (よりシンプルで綺麗に)
+                            Rectangle {
+                                height: 356px;
+                                background: Theme.current.control-secondary;
+                                border-radius: Theme.radius-control * 1px;
+                                border-width: 1px;
+                                border-color: Theme.current.control-stroke;
+                                ListView {
+                                    for cand[i] in root.candidates: Rectangle {
+                                        height: 44px;
+                                        background: Math.mod(i, 2) == 0 ? transparent : Theme.current.control-default;
+                                        HorizontalLayout {
+                                            padding-left: Theme.spacing-m * 1px;
+                                            padding-right: Theme.spacing-m * 1px;
+                                            spacing: Theme.spacing-s * 1px;
+                                            
+                                            // デフォルト設定用ラジオボタン
+                                            VerticalLayout {
+                                                alignment: center;
+                                                width: 24px;
+                                                Rectangle {
+                                                    width: 20px;
+                                                    height: 20px;
+                                                    border-radius: 10px;
+                                                    background: transparent;
+                                                    
+                                                    radio-area := TouchArea {
+                                                        clicked => {
+                                                            root.update-default(root.route-keys[root.selected], cand);
+                                                        }
+                                                    }
+                                                    
+                                                    Text {
+                                                        text: root.current-default == cand ? FluentIcon.radio-selected : FluentIcon.radio-unselected;
+                                                        font-family: "Segoe MDL2 Assets";
+                                                        font-size: 16px;
+                                                        color: root.current-default == cand ? Theme.current.accent-default : Theme.current.text-tertiary;
+                                                        horizontal-alignment: center;
+                                                        vertical-alignment: center;
+                                                    }
+                                                }
+                                            }
+
+                                            VerticalLayout {
+                                                alignment: center;
+                                                if (i < root.candidates-icons.length) : Image {
+                                                    source: root.candidates-icons[i];
+                                                    width: 32px;
+                                                    height: 32px;
+                                                    image-fit: contain;
+                                                }
+                                            }
+                                            VerticalLayout {
+                                                alignment: center;
+                                                Text {
+                                                    text: cand;
+                                                    font-family: Theme.font-family;
+                                                    font-size: 13px;
+                                                    color: Theme.current.text-primary;
+                                                }
+                                            }
+                                            Rectangle { } // Spacer
+                                            VerticalLayout {
+                                                alignment: center;
+                                                Rectangle {
+                                                    width: 28px;
+                                                    height: 28px;
+                                                    border-radius: Theme.radius-control * 1px;
+                                                    background: del.has-hover ? Theme.current.system-critical : transparent;
+                                                    del := TouchArea {
+                                                        clicked => { root.remove-candidate(root.route-keys[root.selected], cand); }
+                                                    }
+                                                    Text {
+                                                        text: FluentIcon.delete;
+                                                        font-family: "Segoe MDL2 Assets";
+                                                        font-size: 11px;
+                                                        color: del.has-hover ? white : Theme.current.text-secondary;
+                                                        horizontal-alignment: center;
+                                                        vertical-alignment: center;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Rectangle { height: 1px; background: Theme.current.control-stroke; }
+                        
+                        // 保存・適用ボタン
+                        HorizontalLayout {
+                            spacing: Theme.spacing-s * 1px;
+                            alignment: start;
+                            AccentButton { text: "保存"; primary: root.dirty; disabled: !root.dirty; clicked => { root.save-clicked(); } }
+                            AccentButton { text: "適用"; clicked => { root.apply-clicked(); } }
+                        }
+                    }
+                    
+                    // タブ 2: 高度なルールのコンテンツ
+                    if (root.active-tab == 1) : VerticalLayout {
+                        spacing: Theme.spacing-m * 1px;
+                        
+                        HorizontalLayout {
+                            spacing: Theme.spacing-s * 1px;
+                            padding-top: 8px;
+                            padding-bottom: 8px;
+                            VerticalLayout {
+                                spacing: 4px;
+                                Text {
+                                    text: "ルーティングルール (" + root.rules.length + ")";
+                                    font-family: Theme.font-family;
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    color: Theme.current.text-primary;
+                                }
+                                Text {
+                                    text: "上から順に評価され、最初に条件に合致したルールが適用されます。";
+                                    font-family: Theme.font-family;
+                                    font-size: 11px;
+                                    color: Theme.current.text-tertiary;
+                                }
+                            }
+                            Rectangle { } // Spacer
                             AccentButton {
-                                text: "+ ルール追加";
+                                text: "+ 新しいルールを追加";
+                                width: 180px;
                                 clicked => { root.add-rule(root.route-keys[root.selected]); }
                             }
                         }
-                        if (root.rules.length == 0) : Text {
-                            text: "条件なし。デフォルトアプリで常に開きます。";
-                            font-family: Theme.font-family;
-                            font-size: 12px;
-                            color: Theme.current.text-tertiary;
+                        
+                        if (root.rules.length == 0) : Rectangle {
+                            height: 120px;
+                            background: Theme.current.control-secondary;
+                            border-radius: Theme.radius-control * 1px;
+                            border-width: 1px;
+                            border-color: Theme.current.control-stroke;
+                            Text {
+                                text: "条件ルールはありません。常にデフォルトアプリで開きます。";
+                                font-family: Theme.font-family;
+                                font-size: 12px;
+                                color: Theme.current.text-tertiary;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
                         }
-                        ListView {
-                            height: root.rules.length * 64px + (root.rules.length > 0 ? Theme.spacing-s * 1px * (root.rules.length - 1) : 0px);
+                        
+                        VerticalLayout {
+                            spacing: Theme.spacing-s * 1px;
                             for rule[i] in root.rules: RuleRow {
-                                width: parent.width;
                                 app-names: root.app-names;
                                 show-glob: false;
                                 show-host: true;
@@ -266,25 +415,28 @@ export component ProtocolsPage inherits Rectangle {
                                 move-up => { root.move-rule(root.route-keys[root.selected], i, -1); }
                                 move-down => { root.move-rule(root.route-keys[root.selected], i, 1); }
                                 delete => { root.remove-rule(root.route-keys[root.selected], i); }
+                                edited(g, h, u, m, a, p) => { root.update-rule(root.route-keys[root.selected], i, { glob: g, host: h, url: u, modifier: m, app: a, pick: p }); }
                             }
+                        }
+                        
+                        Rectangle { height: 1px; background: Theme.current.control-stroke; }
+                        
+                        // 適用ボタン
+                        HorizontalLayout {
+                            spacing: Theme.spacing-s * 1px;
+                            alignment: start;
+                            AccentButton { text: "適用"; primary: root.dirty; clicked => { root.apply-clicked(); } }
                         }
                     }
                 }
             }
-            if (root.selected < 0 || root.selected >= root.route-keys.length) : Rectangle {
-                width: parent.width;
-                height: parent.height;
-                background: transparent;
-                Text {
-                    text: "左側からスキームを選択してください";
-                    font-family: Theme.font-family;
-                    font-size: 14px;
-                    color: Theme.current.text-tertiary;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
-                    width: parent.width;
-                    height: parent.height;
-                }
+            if (root.selected < 0 || root.selected >= root.route-keys.length) : Text {
+                text: "左側からスキームを選択してください";
+                font-family: Theme.font-family;
+                font-size: 14px;
+                color: Theme.current.text-tertiary;
+                horizontal-alignment: center;
+                vertical-alignment: center;
             }
         }
     }

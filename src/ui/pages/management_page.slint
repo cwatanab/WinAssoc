@@ -25,162 +25,382 @@ export component ManagementPage inherits Rectangle {
     callback restore-clicked();
 
     background: transparent;
-    VerticalLayout {
-        spacing: Theme.spacing-l * 1px;
-        width: parent.width;
+    ScrollView {
+        VerticalLayout {
+            padding: Theme.spacing-l * 1px;
+            spacing: Theme.spacing-l * 1px;
 
-        Card {
-            VerticalLayout {
-                padding: Theme.spacing-l * 1px;
-                spacing: Theme.spacing-m * 1px;
-                Text {
-                    text: "設定";
-                    font-family: Theme.font-family;
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: Theme.current.text-primary;
-                }
+            // 一般設定
+            Card {
                 VerticalLayout {
-                    spacing: Theme.spacing-xs * 1px;
+                    padding-left: Theme.spacing-l * 1px;
+                    padding-right: Theme.spacing-l * 1px;
+                    padding-top: Theme.spacing-m * 1px;
+                    padding-bottom: Theme.spacing-m * 1px;
+                    
                     Text {
-                        text: "設定ファイル";
+                        text: "一般設定";
                         font-family: Theme.font-family;
-                        font-size: 12px;
-                        color: Theme.current.text-secondary;
-                    }
-                    TextField { value: root.config-path; }
-                }
-                VerticalLayout {
-                    spacing: Theme.spacing-xs * 1px;
-                    Text {
-                        text: "ピッカー自動終了 (ミリ秒)";
-                        font-family: Theme.font-family;
-                        font-size: 12px;
-                        color: Theme.current.text-secondary;
-                    }
-                    NumberBox {
-                        min: 1000;
-                        max: 60000;
-                        step: 500;
-                        value <=> root.picker-timeout-ms;
-                    }
-                }
-                VerticalLayout {
-                    spacing: Theme.spacing-xs * 1px;
-                    Text {
-                        text: "テーマ モード";
-                        font-family: Theme.font-family;
-                        font-size: 12px;
-                        color: Theme.current.text-secondary;
-                    }
-                    ComboBox {
-                        model: root.theme-modes;
-                        current-value: root.theme-mode;
-                        selected(v) => {
-                            root.update-theme-mode(v);
-                        }
-                    }
-                }
-            }
-        }
-
-        Card {
-            VerticalLayout {
-                padding: Theme.spacing-l * 1px;
-                spacing: Theme.spacing-m * 1px;
-                Text {
-                    text: "レジストリ操作";
-                    font-family: Theme.font-family;
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: Theme.current.text-primary;
-                }
-                HorizontalLayout {
-                    spacing: Theme.spacing-s * 1px;
-                    AccentButton {
-                        text: "適用 (apply)";
-                        clicked => {
-                            root.apply-clicked();
-                        }
-                    }
-                    AccentButton {
-                        text: "解除 (unregister)";
-                        clicked => {
-                            root.unregister-clicked();
-                        }
-                    }
-                    AccentButton {
-                        text: "診断 (doctor)";
-                        clicked => {
-                            root.doctor-clicked();
-                        }
-                    }
-                }
-            }
-        }
-
-        Card {
-            VerticalLayout {
-                padding: Theme.spacing-l * 1px;
-                spacing: Theme.spacing-m * 1px;
-                Text {
-                    text: "バックアップ";
-                    font-family: Theme.font-family;
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: Theme.current.text-primary;
-                }
-                HorizontalLayout {
-                    spacing: Theme.spacing-s * 1px;
-                    AccentButton {
-                        text: "バックアップ";
-                        clicked => {
-                            root.backup-clicked();
-                        }
-                    }
-                    AccentButton {
-                        text: "復元 (restore)";
-                        clicked => {
-                            root.restore-clicked();
-                        }
-                    }
-                }
-            }
-        }
-
-        if (root.result-lines.length > 0) : Card {
-            VerticalLayout {
-                padding: Theme.spacing-l * 1px;
-                spacing: Theme.spacing-m * 1px;
-                HorizontalLayout {
-                    spacing: Theme.spacing-s * 1px;
-                    Text {
-                        text: root.result-success ? "✓ 成功" : "✗ エラー";
-                        font-family: Theme.font-family;
-                        font-size: 14px;
+                        font-size: 16px;
                         font-weight: 600;
-                        color: root.result-success ? Theme.current.system-success : Theme.current.system-critical;
+                        color: Theme.current.accent-default;
+                        height: 32px;
                     }
-                    InfoBadge {
-                        text: root.result-lines.length + " 件";
-                        kind: root.result-success ? BadgeKind.success : BadgeKind.critical;
+                    
+
+                    
+                    // ピッカー自動終了
+                    HorizontalLayout {
+                        padding-top: Theme.spacing-m * 1px;
+                        padding-bottom: Theme.spacing-m * 1px;
+                        spacing: Theme.spacing-m * 1px;
+                        alignment: space-between;
+                        
+                        VerticalLayout {
+                            spacing: Theme.spacing-xxs * 1px;
+                            alignment: center;
+                            Text {
+                                text: "ピッカー自動終了 (ミリ秒)";
+                                font-family: Theme.font-family;
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: Theme.current.text-primary;
+                            }
+                            Text {
+                                text: "ピッカー画面が表示されてから自動で閉じるまでの時間です";
+                                font-family: Theme.font-family;
+                                font-size: 11px;
+                                color: Theme.current.text-tertiary;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            width: 200px;
+                            NumberBox {
+                                min: 1000;
+                                max: 60000;
+                                step: 500;
+                                value <=> root.picker-timeout-ms;
+                            }
+                        }
+                    }
+                    
+                    Rectangle { height: 1px; background: Theme.current.control-stroke; opacity: 0.3; }
+                    
+                    // テーマ モード
+                    HorizontalLayout {
+                        padding-top: Theme.spacing-m * 1px;
+                        padding-bottom: Theme.spacing-m * 1px;
+                        spacing: Theme.spacing-m * 1px;
+                        alignment: space-between;
+                        
+                        VerticalLayout {
+                            spacing: Theme.spacing-xxs * 1px;
+                            alignment: center;
+                            Text {
+                                text: "テーマ モード";
+                                font-family: Theme.font-family;
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: Theme.current.text-primary;
+                            }
+                            Text {
+                                text: "アプリケーション全体のカラーテーマを設定します";
+                                font-family: Theme.font-family;
+                                font-size: 11px;
+                                color: Theme.current.text-tertiary;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            width: 200px;
+                            ComboBox {
+                                model: root.theme-modes;
+                                current-value: root.theme-mode;
+                                selected(v) => {
+                                    root.update-theme-mode(v);
+                                }
+                            }
+                        }
                     }
                 }
-                Rectangle {
-                    height: 200px;
-                    border-radius: Theme.radius-control * 1px;
-                    background: Theme.current.control-default;
-                    border-width: 1px;
-                    border-color: Theme.current.control-stroke;
-                    ScrollView {
+            }
+
+            // システム連携と診断
+            Card {
+                VerticalLayout {
+                    padding-left: Theme.spacing-l * 1px;
+                    padding-right: Theme.spacing-l * 1px;
+                    padding-top: Theme.spacing-m * 1px;
+                    padding-bottom: Theme.spacing-m * 1px;
+                    
+                    Text {
+                        text: "システム連携と診断";
+                        font-family: Theme.font-family;
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: Theme.current.accent-default;
+                        height: 32px;
+                    }
+                    
+                    // 適用
+                    HorizontalLayout {
+                        padding-top: Theme.spacing-m * 1px;
+                        padding-bottom: Theme.spacing-m * 1px;
+                        spacing: Theme.spacing-m * 1px;
+                        alignment: space-between;
+                        
                         VerticalLayout {
-                            padding: Theme.spacing-s * 1px;
-                            spacing: 2px;
-                            for line in root.result-lines: Text {
-                                text: line;
-                                font-family: Theme.font-family-mono;
-                                font-size: 12px;
-                                color: root.result-success ? Theme.current.text-primary : Theme.current.system-critical;
+                            spacing: Theme.spacing-xxs * 1px;
+                            alignment: center;
+                            Text {
+                                text: "関連付けをシステムに適用";
+                                font-family: Theme.font-family;
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: Theme.current.text-primary;
+                            }
+                            Text {
+                                text: "現在の拡張子・プロトコルの設定をWindowsのレジストリに登録します";
+                                font-family: Theme.font-family;
+                                font-size: 11px;
+                                color: Theme.current.text-tertiary;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            AccentButton {
+                                text: "適用 (apply)";
+                                width: 140px;
+                                clicked => {
+                                    root.apply-clicked();
+                                }
+                            }
+                        }
+                    }
+                    
+                    Rectangle { height: 1px; background: Theme.current.control-stroke; opacity: 0.3; }
+                    
+                    // 解除
+                    HorizontalLayout {
+                        padding-top: Theme.spacing-m * 1px;
+                        padding-bottom: Theme.spacing-m * 1px;
+                        spacing: Theme.spacing-m * 1px;
+                        alignment: space-between;
+                        
+                        VerticalLayout {
+                            spacing: Theme.spacing-xxs * 1px;
+                            alignment: center;
+                            Text {
+                                text: "関連付けの解除";
+                                font-family: Theme.font-family;
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: Theme.current.text-primary;
+                            }
+                            Text {
+                                text: "WinAssocのシステム登録を削除し、関連付けを初期化します";
+                                font-family: Theme.font-family;
+                                font-size: 11px;
+                                color: Theme.current.text-tertiary;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            AccentButton {
+                                text: "解除 (unregister)";
+                                width: 140px;
+                                clicked => {
+                                    root.unregister-clicked();
+                                }
+                            }
+                        }
+                    }
+                    
+                    Rectangle { height: 1px; background: Theme.current.control-stroke; opacity: 0.3; }
+                    
+                    // 診断
+                    HorizontalLayout {
+                        padding-top: Theme.spacing-m * 1px;
+                        padding-bottom: Theme.spacing-m * 1px;
+                        spacing: Theme.spacing-m * 1px;
+                        alignment: space-between;
+                        
+                        VerticalLayout {
+                            spacing: Theme.spacing-xxs * 1px;
+                            alignment: center;
+                            Text {
+                                text: "システムの診断";
+                                font-family: Theme.font-family;
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: Theme.current.text-primary;
+                            }
+                            Text {
+                                text: "レジストリ登録状況やパス設定の整合性をチェックします";
+                                font-family: Theme.font-family;
+                                font-size: 11px;
+                                color: Theme.current.text-tertiary;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            AccentButton {
+                                text: "診断 (doctor)";
+                                width: 140px;
+                                clicked => {
+                                    root.doctor-clicked();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // バックアップと復元
+            Card {
+                VerticalLayout {
+                    padding-left: Theme.spacing-l * 1px;
+                    padding-right: Theme.spacing-l * 1px;
+                    padding-top: Theme.spacing-m * 1px;
+                    padding-bottom: Theme.spacing-m * 1px;
+                    
+                    Text {
+                        text: "バックアップと復元";
+                        font-family: Theme.font-family;
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: Theme.current.accent-default;
+                        height: 32px;
+                    }
+                    
+                    // バックアップ
+                    HorizontalLayout {
+                        padding-top: Theme.spacing-m * 1px;
+                        padding-bottom: Theme.spacing-m * 1px;
+                        spacing: Theme.spacing-m * 1px;
+                        alignment: space-between;
+                        
+                        VerticalLayout {
+                            spacing: Theme.spacing-xxs * 1px;
+                            alignment: center;
+                            Text {
+                                text: "設定のバックアップ";
+                                font-family: Theme.font-family;
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: Theme.current.text-primary;
+                            }
+                            Text {
+                                text: "現在のWinAssoc設定ファイルをコピーしてバックアップを作成します";
+                                font-family: Theme.font-family;
+                                font-size: 11px;
+                                color: Theme.current.text-tertiary;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            AccentButton {
+                                text: "バックアップ";
+                                width: 140px;
+                                clicked => {
+                                    root.backup-clicked();
+                                }
+                            }
+                        }
+                    }
+                    
+                    Rectangle { height: 1px; background: Theme.current.control-stroke; opacity: 0.3; }
+                    
+                    // 復元
+                    HorizontalLayout {
+                        padding-top: Theme.spacing-m * 1px;
+                        padding-bottom: Theme.spacing-m * 1px;
+                        spacing: Theme.spacing-m * 1px;
+                        alignment: space-between;
+                        
+                        VerticalLayout {
+                            spacing: Theme.spacing-xxs * 1px;
+                            alignment: center;
+                            Text {
+                                text: "設定の復元";
+                                font-family: Theme.font-family;
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: Theme.current.text-primary;
+                            }
+                            Text {
+                                text: "以前バックアップした設定ファイルを元に復元します";
+                                font-family: Theme.font-family;
+                                font-size: 11px;
+                                color: Theme.current.text-tertiary;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            AccentButton {
+                                text: "復元 (restore)";
+                                width: 140px;
+                                clicked => {
+                                    root.restore-clicked();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 実行結果ログ
+            if (root.result-lines.length > 0) : Card {
+                VerticalLayout {
+                    padding: Theme.spacing-l * 1px;
+                    spacing: Theme.spacing-m * 1px;
+                    HorizontalLayout {
+                        spacing: Theme.spacing-s * 1px;
+                        alignment: start;
+                        
+                        Rectangle {
+                            width: 6px;
+                            height: 18px;
+                            border-radius: 3px;
+                            background: root.result-success ? Theme.current.system-success : Theme.current.system-critical;
+                        }
+                        
+                        Text {
+                            text: root.result-success ? "操作が完了しました" : "エラーが発生しました";
+                            font-family: Theme.font-family;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: Theme.current.text-primary;
+                            vertical-alignment: center;
+                        }
+                        
+                        Rectangle { width: 8px; }
+                        
+                        InfoBadge {
+                            text: root.result-lines.length + " 件の出力";
+                            kind: root.result-success ? BadgeKind.success : BadgeKind.critical;
+                        }
+                    }
+                    Rectangle {
+                        height: 200px;
+                        border-radius: Theme.radius-control * 1px;
+                        background: Theme.current.control-secondary;
+                        border-width: 1px;
+                        border-color: Theme.current.control-stroke;
+                        ScrollView {
+                            VerticalLayout {
+                                padding-left: Theme.spacing-m * 1px;
+                                padding-right: Theme.spacing-m * 1px;
+                                padding-top: Theme.spacing-s * 1px;
+                                padding-bottom: Theme.spacing-s * 1px;
+                                spacing: 4px;
+                                for line in root.result-lines: Text {
+                                    text: line;
+                                    font-family: Theme.font-family-mono;
+                                    font-size: 12px;
+                                    color: root.result-success ? Theme.current.text-primary : Theme.current.system-critical;
+                                }
                             }
                         }
                     }

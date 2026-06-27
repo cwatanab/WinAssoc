@@ -1,8 +1,8 @@
 import { Theme } from "../theme.slint";
 import { FluentIcon } from "../icons.slint";
 import { ComboBox } from "combo_box.slint";
-import { ToggleSwitch } from "toggle_switch.slint";
-import { ConditionChip } from "condition_chip.slint";
+import { CheckBox } from "checkbox.slint";
+import { TextField } from "text_field.slint";
 
 export component RuleRow inherits Rectangle {
     in property <[string]> app-names: [];
@@ -19,95 +19,176 @@ export component RuleRow inherits Rectangle {
     callback move-up();
     callback move-down();
     callback delete();
+    callback edited(string, string, string, string, string, bool);
 
-    height: 56px;
+    height: 108px;
     border-radius: Theme.radius-control * 1px;
     background: Theme.current.control-secondary;
+    border-width: 1px;
+    border-color: Theme.current.control-stroke;
+
     HorizontalLayout {
-        padding: Theme.spacing-s * 1px;
-        spacing: Theme.spacing-s * 1px;
-        width: parent.width;
+        padding: Theme.spacing-m * 1px;
+        spacing: Theme.spacing-m * 1px;
+        
         VerticalLayout {
-            spacing: Theme.spacing-xs * 1px;
-            height: parent.height;
-            HorizontalLayout {
-                spacing: Theme.spacing-xs * 1px;
-                if (root.show-glob) : ConditionChip { kind: "glob"; value <=> root.glob; }
-                if (root.show-host) : ConditionChip { kind: "host"; value <=> root.host; }
-                if (root.show-url) : ConditionChip { kind: "url"; value <=> root.url; }
-                if (root.show-modifier) : ConditionChip { kind: "modifier"; value <=> root.modifier; }
-            }
+            spacing: Theme.spacing-s * 1px;
+            
+            // 条件 (WHEN)
             HorizontalLayout {
                 spacing: Theme.spacing-s * 1px;
-                ToggleSwitch { checked <=> root.pick; }
-                Text { text: "pick"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-secondary; vertical-alignment: center; }
-                Text { text: "or"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
-                ComboBox {
-                    model: root.app-names;
-                    enabled: !root.pick;
-                    current-value: root.app;
-                    selected(v) => { root.app = v; }
+                
+                Text {
+                    text: "条件 (WHEN):";
+                    font-family: Theme.font-family;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: Theme.current.text-secondary;
+                    vertical-alignment: center;
+                    width: 90px;
+                }
+                
+                if (root.show-glob) : HorizontalLayout {
+                    spacing: 4px;
+                    horizontal-stretch: 1;
+                    Text { text: "パス:"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                    TextField {
+                        placeholder: "**/*.md";
+                        value <=> root.glob;
+                        horizontal-stretch: 1;
+                        min-width: 80px;
+                        accepted(v) => { root.glob = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                    }
+                }
+                
+                if (root.show-host) : HorizontalLayout {
+                    spacing: 4px;
+                    horizontal-stretch: 1;
+                    Text { text: "ホスト:"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                    TextField {
+                        placeholder: "*.example.com";
+                        value <=> root.host;
+                        horizontal-stretch: 1;
+                        min-width: 80px;
+                        accepted(v) => { root.host = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                    }
+                }
+                
+                if (root.show-url) : HorizontalLayout {
+                    spacing: 4px;
+                    horizontal-stretch: 1;
+                    Text { text: "URL:"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                    TextField {
+                        placeholder: "https://*";
+                        value <=> root.url;
+                        horizontal-stretch: 1;
+                        min-width: 120px;
+                        accepted(v) => { root.url = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                    }
+                }
+                
+                if (root.show-modifier) : HorizontalLayout {
+                    spacing: 4px;
+                    horizontal-stretch: 0;
+                    Text { text: "キー:"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                    ComboBox {
+                        model: ["", "SHIFT", "CTRL", "ALT"];
+                        current-value: root.modifier;
+                        width: 80px;
+                        selected(v) => { root.modifier = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                    }
+                }
+            }
+            
+            // アクション (THEN)
+            HorizontalLayout {
+                spacing: Theme.spacing-s * 1px;
+                alignment: start;
+                
+                Text {
+                    text: "動作 (THEN):";
+                    font-family: Theme.font-family;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: Theme.current.text-secondary;
+                    vertical-alignment: center;
+                    width: 90px;
+                }
+                
+                HorizontalLayout {
+                    spacing: Theme.spacing-m * 1px;
+                    
+                    CheckBox {
+                        label: "アプリ選択画面を表示 (Pick)";
+                        checked <=> root.pick;
+                        toggled(v) => { root.pick = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                    }
+                    
+                    if (!root.pick) : HorizontalLayout {
+                        spacing: Theme.spacing-s * 1px;
+                        Text { text: "または"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                        ComboBox {
+                            model: root.app-names;
+                            current-value: root.app;
+                            horizontal-stretch: 1;
+                            min-width: 120px;
+                            max-width: 180px;
+                            selected(v) => { root.app = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                        }
+                    }
                 }
             }
         }
+        
+        // 操作ボタン
         VerticalLayout {
+            width: 32px;
             spacing: 2px;
-            width: 24px;
-            height: parent.height;
+            alignment: center;
             Rectangle {
-                width: 24px;
-                height: 20px;
+                width: 28px;
+                height: 24px;
+                border-radius: Theme.radius-control * 1px;
                 background: up-area.has-hover ? Theme.current.nav-hover-reveal : transparent;
-                up-area := TouchArea {
-                    clicked => { root.move-up(); }
-                }
+                up-area := TouchArea { clicked => { root.move-up(); } }
                 Text {
                     text: FluentIcon.chevron-up;
-                    font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
-                    font-size: 10px;
+                    font-family: "Segoe MDL2 Assets";
+                    font-size: 11px;
                     color: Theme.current.text-secondary;
                     horizontal-alignment: center;
                     vertical-alignment: center;
-                    width: parent.width;
-                    height: parent.height;
                 }
             }
             Rectangle {
-                width: 24px;
-                height: 20px;
+                width: 28px;
+                height: 24px;
+                border-radius: Theme.radius-control * 1px;
                 background: down-area.has-hover ? Theme.current.nav-hover-reveal : transparent;
-                down-area := TouchArea {
-                    clicked => { root.move-down(); }
-                }
+                down-area := TouchArea { clicked => { root.move-down(); } }
                 Text {
                     text: FluentIcon.chevron-down;
-                    font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
-                    font-size: 10px;
+                    font-family: "Segoe MDL2 Assets";
+                    font-size: 11px;
                     color: Theme.current.text-secondary;
                     horizontal-alignment: center;
                     vertical-alignment: center;
-                    width: parent.width;
-                    height: parent.height;
                 }
             }
-        }
-        Rectangle {
-            width: 24px;
-            height: 24px;
-            border-radius: Theme.radius-control * 1px;
-            background: del-area.has-hover ? Theme.current.system-critical : transparent;
-            del-area := TouchArea {
-                clicked => { root.delete(); }
-            }
-            Text {
-                text: FluentIcon.delete;
-                font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
-                font-size: 12px;
-                color: del-area.has-hover ? white : Theme.current.text-secondary;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-                width: parent.width;
-                height: parent.height;
+            Rectangle {
+                width: 28px;
+                height: 24px;
+                border-radius: Theme.radius-control * 1px;
+                background: del-area.has-hover ? Theme.current.system-critical : transparent;
+                del-area := TouchArea { clicked => { root.delete(); } }
+                Text {
+                    text: FluentIcon.delete;
+                    font-family: "Segoe MDL2 Assets";
+                    font-size: 11px;
+                    color: del-area.has-hover ? white : Theme.current.text-secondary;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
             }
         }
     }

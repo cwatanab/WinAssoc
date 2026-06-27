@@ -36,7 +36,7 @@ pub fn validate_config(config: &Config) -> Result<()> {
                 (None, false) => bail!("{at}: app か pick = true のどちらかが必要です"),
             }
             if let Some(m) = &rule.modifier {
-                if !matches!(m.as_str(), "shift" | "ctrl" | "alt") {
+                if !matches!(m.to_ascii_lowercase().as_str(), "shift" | "ctrl" | "alt") {
                     bail!("{at}: modifier は shift / ctrl / alt のいずれかです (指定値: {m})");
                 }
             }

@@ -4,26 +4,29 @@ export component TextField inherits Rectangle {
     in property <string> label: "";
     in property <string> placeholder: "";
     in property <string> error: "";
-    in-out property <string> value: "";
+    in-out property <string> value <=> input.text;
     callback accepted(string);
+    callback edited(string);
+    horizontal-stretch: 1;
     height: 32px;
     border-radius: Theme.radius-control * 1px;
     background: Theme.current.control-default;
     border-width: 1px;
     border-color: root.error != "" ? Theme.current.system-critical : Theme.current.control-stroke;
+    clip: true;
     HorizontalLayout {
         padding-left: Theme.spacing-m * 1px;
         padding-right: Theme.spacing-m * 1px;
-        width: parent.width;
-        TextInput {
-            text: root.value;
+        input := TextInput {
             font-family: Theme.font-family;
             font-size: 14px;
             color: Theme.current.text-primary;
             vertical-alignment: center;
-            width: parent.width - Theme.spacing-m * 1px * 2;
-            height: parent.height;
-            accepted => { root.value = self.text; root.accepted(self.text); }
+            single-line: true;
+            wrap: no-wrap;
+            horizontal-stretch: 1;
+            accepted => { root.accepted(self.text); }
+            edited => { root.edited(self.text); }
         }
     }
 }

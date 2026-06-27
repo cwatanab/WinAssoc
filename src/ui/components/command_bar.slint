@@ -16,47 +16,5 @@ export component CommandBar inherits Rectangle {
         spacing: Theme.spacing-xs * 1px;
         width: parent.width;
         alignment: end;
-        Rectangle {
-            width: 32px;
-            height: 32px;
-            border-radius: Theme.radius-control * 1px;
-            background: theme-area.has-hover ? Theme.current.nav-hover-reveal : transparent;
-            animate background { duration: 150ms; }
-            theme-area := TouchArea {
-                clicked => { root.theme-clicked(); }
-            }
-            Text {
-                text: root.theme-icon;
-                font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
-                font-size: 16px;
-                color: Theme.current.text-secondary;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-                width: parent.width;
-                height: parent.height;
-            }
-        }
-        AccentButton { text: "保存"; primary: root.dirty; disabled: !root.dirty; clicked => { root.save-clicked(); } }
-        AccentButton { text: "適用"; clicked => { root.apply-clicked(); } }
-        Rectangle {
-            width: 32px;
-            height: 32px;
-            border-radius: Theme.radius-control * 1px;
-            background: refresh-area.has-hover ? Theme.current.nav-hover-reveal : transparent;
-            animate background { duration: 150ms; }
-            refresh-area := TouchArea {
-                clicked => { root.refresh-clicked(); }
-            }
-            Text {
-                text: FluentIcon.refresh;
-                font-family: "Segoe Fluent Icons, Segoe MDL2 Assets";
-                font-size: 16px;
-                color: Theme.current.text-secondary;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-                width: parent.width;
-                height: parent.height;
-            }
-        }
     }
 }

@@ -39,6 +39,12 @@ export component Picker inherits Window {
             if (event.text == Key.LeftArrow && root.candidates.length > 0) {
                 root.selected = Math.mod(root.selected + root.candidates.length - 1, root.candidates.length)
             }
+            if (event.text == Key.UpArrow && root.candidates.length > 0) {
+                root.selected = Math.mod(root.selected + root.candidates.length - 3, root.candidates.length)
+            }
+            if (event.text == Key.DownArrow && root.candidates.length > 0) {
+                root.selected = Math.mod(root.selected + 3, root.candidates.length)
+            }
             if (event.text == Key.Digit1) {
                 root.choose(0)
             }
@@ -72,16 +78,99 @@ export component Picker inherits Window {
         Rectangle {
             background: root.panel-color;
             border-radius: 12px;
+            border-width: 1px;
+            border-color: root.text-color.with-alpha(0.12);
+            
             VerticalLayout {
                 padding: 18px;
                 spacing: 12px;
+                
                 Text {
                     text: root.target-label;
                     color: root.subtle-color;
-                    font-size: 10px;
+                    font-family: "Segoe UI, Meiryo, sans-serif";
+                    font-size: 11px;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                    overflow: elide;
                 }
+                
                 Rectangle {
-                    height: root.height - 60px;
+                    height: 188px;
+                    
+                    for cand[i] in root.candidates: Rectangle {
+                        width: 80px;
+                        height: 88px;
+                        x: Math.mod(i, 3) * (80px + 12px);
+                        y: (i / 3) * (88px + 12px);
+                        border-radius: 8px;
+                        
+                        background: root.selected == i ? root.accent-color.with-alpha(0.15)
+                            : tile-touch.has-hover ? root.text-color.with-alpha(0.08)
+                            : transparent;
+                        border-width: root.selected == i ? 2px : 1px;
+                        border-color: root.selected == i ? root.accent-color
+                            : tile-touch.has-hover ? root.text-color.with-alpha(0.15)
+                            : transparent;
+                            
+                        animate background, border-color { duration: 150ms; }
+                        
+                        tile-touch := TouchArea {
+                            clicked => { root.choose(i); }
+                        }
+                        
+                        VerticalLayout {
+                            padding: 6px;
+                            spacing: 4px;
+                            alignment: center;
+                            
+                            if (i < root.icons.length) : Image {
+                                source: root.icons[i];
+                                width: 32px;
+                                height: 32px;
+                                image-fit: contain;
+                                horizontal-alignment: center;
+                            }
+                            
+                            Text {
+                                text: cand.name;
+                                color: root.text-color;
+                                font-family: "Segoe UI, Meiryo, sans-serif";
+                                font-size: 11px;
+                                font-weight: 500;
+                                horizontal-alignment: center;
+                                overflow: elide;
+                            }
+                            
+                            if (i < 9) : Rectangle {
+                                width: 16px;
+                                height: 14px;
+                                border-radius: 3px;
+                                background: root.selected == i ? root.accent-color.with-alpha(0.25)
+                                    : root.text-color.with-alpha(0.1);
+                                border-width: 1px;
+                                border-color: root.selected == i ? root.accent-color.with-alpha(0.4)
+                                    : root.text-color.with-alpha(0.2);
+                                
+                                Text {
+                                    text: i + 1;
+                                    color: root.selected == i ? root.text-color : root.subtle-color;
+                                    font-size: 9px;
+                                    font-weight: 700;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Text {
+                    text: "矢印キー 選択 · Enter/数字で決定 · Esc 中止";
+                    color: root.subtle-color;
+                    font-family: "Segoe UI, Meiryo, sans-serif";
+                    font-size: 10px;
+                    horizontal-alignment: center;
                 }
             }
         }

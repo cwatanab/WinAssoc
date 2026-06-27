@@ -17,7 +17,7 @@ impl Modifiers {
     pub fn from_names<'a>(names: impl IntoIterator<Item = &'a str>) -> Result<Modifiers> {
         let mut m = Modifiers::default();
         for name in names {
-            match name {
+            match name.to_ascii_lowercase().as_str() {
                 "shift" => m.shift = true,
                 "ctrl" => m.ctrl = true,
                 "alt" => m.alt = true,
@@ -28,7 +28,7 @@ impl Modifiers {
     }
 
     fn pressed(&self, name: &str) -> bool {
-        match name {
+        match name.to_ascii_lowercase().as_str() {
             "shift" => self.shift,
             "ctrl" => self.ctrl,
             "alt" => self.alt,

@@ -14,16 +14,7 @@ export component TitleBar inherits Rectangle {
     HorizontalLayout {
         padding-left: Theme.spacing-m * 1px;
         width: parent.width;
-        Text {
-            text: root.title + (root.dirty ? " ●" : "");
-            font-family: Theme.font-family;
-            font-size: 12px;
-            font-weight: 400;
-            color: Theme.current.text-secondary;
-            vertical-alignment: center;
-            width: 240px;
-            height: parent.height;
-        }
+
         CommandBar {
             dirty: root.dirty;
             theme-icon: root.theme-icon;
