@@ -1,3 +1,4 @@
+#![cfg_attr(not(test), windows_subsystem = "windows")]
 use std::path::PathBuf;
 
 use winassoc::bail;
@@ -61,6 +62,11 @@ fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() == 1 {
         return settings::run();
+    } else {
+        #[cfg(windows)]
+        unsafe {
+            winapi_attach_console();
+        }
     }
 
     let matches = build_cli().get_matches();
@@ -113,5 +119,35 @@ fn main() -> Result<()> {
         }
     } else {
         bail!("サブコマンドを指定してください (open, test, list, apply, unregister, doctor, log, backup, restore)");
+    }
+}
+ 
+#[cfg(windows)]
+unsafe fn winapi_attach_console() {
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn AttachConsole(dwProcessId: u32) -> i32;
+        fn GetStdHandle(nStdHandle: u32) -> isize;
+    }
+    #[link(name = "msvcrt")]
+    extern "C" {
+        fn _open_osfhandle(osfhandle: isize, flags: i32) -> i32;
+        fn _dup2(src: i32, dst: i32) -> i32;
+    }
+    if AttachConsole(0xFFFFFFFF) != 0 {
+        let stdout_handle = GetStdHandle(0xFFFFFFF5);
+        if stdout_handle != -1 && stdout_handle != 0 {
+            let fd = _open_osfhandle(stdout_handle, 0);
+            if fd >= 0 {
+                let _ = _dup2(fd, 1);
+            }
+        }
+        let stderr_handle = GetStdHandle(0xFFFFFFF4);
+        if stderr_handle != -1 && stderr_handle != 0 {
+            let fd = _open_osfhandle(stderr_handle, 0);
+            if fd >= 0 {
+                let _ = _dup2(fd, 2);
+            }
+        }
     }
 }

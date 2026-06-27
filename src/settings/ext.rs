@@ -148,7 +148,12 @@ impl ExtState {
         let mut out = std::collections::BTreeMap::new();
         for i in 0..self.route_model.row_count() {
             let entry = self.route_model.row_data(i).unwrap();
-            out.insert(entry.key.clone(), route_entry_to_table(&entry));
+            let clean_key = if entry.key.starts_with('.') {
+                entry.key.trim_start_matches('.').to_string()
+            } else {
+                entry.key.clone()
+            };
+            out.insert(clean_key, route_entry_to_table(&entry));
         }
         out
     }
@@ -194,7 +199,7 @@ mod tests {
         let state = ExtState::from_ext(&ext);
         let config = state.to_config();
         assert_eq!(config.len(), 1);
-        let t = config.get(".md").unwrap();
+        let t = config.get("md").unwrap();
         assert_eq!(t.default, Some("zed".to_string()));
         assert_eq!(t.candidates, Some(vec!["vscode".to_string()]));
     }

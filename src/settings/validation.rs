@@ -98,10 +98,11 @@ fn validate_route_table(
 }
 
 fn is_valid_app_name(s: &str) -> bool {
-    !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
 }
 fn is_valid_ext_key(s: &str) -> bool {
-    s.starts_with('.') && s.len() > 1 && s[1..].chars().all(|c| c.is_ascii_alphanumeric())
+    let name = if s.starts_with('.') { &s[1..] } else { s };
+    !name.is_empty() && name.chars().all(|c| c.is_ascii_alphanumeric())
 }
 fn is_valid_protocol_scheme(s: &str) -> bool {
     !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '+' || c == '-' || c == '.')
@@ -118,7 +119,7 @@ mod tests {
     #[test] fn default_config_is_valid() { assert_eq!(validate(&empty()).len(), 0); }
     #[test] fn invalid_app_name_is_error() {
         let mut c = empty();
-        c.apps.insert("with-dash".to_string(), AppDef::default());
+        c.apps.insert("with space".to_string(), AppDef::default());
         assert!(validate(&c).iter().any(|e| matches!(e, ValidationError::InvalidAppName(_))));
     }
     #[test] fn empty_cmd_is_error() {
@@ -172,16 +173,17 @@ mod tests {
         c.ext = ext;
         assert!(validate(&c).iter().any(|e| matches!(e, ValidationError::InvalidModifier(_))));
     }
-    #[test] fn ext_key_must_start_with_dot() {
+    #[test] fn invalid_ext_key_fails() {
         let mut c = empty();
         let mut ext = BTreeMap::new();
-        ext.insert("md".to_string(), RouteTable { default: None, rules: vec![], candidates: None });
+        ext.insert("a/b".to_string(), RouteTable { default: None, rules: vec![], candidates: None });
         c.ext = ext;
         assert!(validate(&c).iter().any(|e| matches!(e, ValidationError::InvalidExtKey(_))));
     }
     #[test] fn valid_ext_key_passes() {
         let mut c = empty();
         let mut ext = BTreeMap::new();
+        ext.insert("md".to_string(), RouteTable { default: None, rules: vec![], candidates: None });
         ext.insert(".md".to_string(), RouteTable { default: None, rules: vec![], candidates: None });
         c.ext = ext;
         assert_eq!(validate(&c).len(), 0);

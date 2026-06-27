@@ -256,6 +256,10 @@ pub fn run() -> Result<()> {
                 // (4) 管理の同期
                 let r_lines: Vec<SharedString> = result_lines.borrow().iter().map(|s| SharedString::from(s.clone())).collect();
                 ui.set_result_lines(Rc::new(VecModel::from(r_lines)).into());
+                
+                let r_text = result_lines.borrow().join("\n");
+                ui.set_result_text(SharedString::from(r_text));
+                
                 ui.set_result_success(result_success.get());
                 
                 // 全体バリデーションの実行とエラー表示の同期

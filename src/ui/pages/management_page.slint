@@ -14,6 +14,7 @@ export component ManagementPage inherits Rectangle {
     in property <string> theme-mode: "system";
     in property <[string]> theme-modes: ["system", "light", "dark"];
     in property <[string]> result-lines: [];
+    in property <string> result-text: "";
     in property <bool> result-success: true;
 
     callback update-picker-timeout(int);
@@ -394,12 +395,15 @@ export component ManagementPage inherits Rectangle {
                                 padding-right: Theme.spacing-m * 1px;
                                 padding-top: Theme.spacing-s * 1px;
                                 padding-bottom: Theme.spacing-s * 1px;
-                                spacing: 4px;
-                                for line in root.result-lines: Text {
-                                    text: line;
+                                
+                                TextInput {
+                                    text: root.result-text;
+                                    read-only: true;
+                                    single-line: false;
                                     font-family: Theme.font-family-mono;
                                     font-size: 12px;
                                     color: root.result-success ? Theme.current.text-primary : Theme.current.system-critical;
+                                    wrap: word-wrap;
                                 }
                             }
                         }

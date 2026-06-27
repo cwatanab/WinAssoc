@@ -46,7 +46,14 @@ pub fn open(config: &Config, raw_target: &str) -> Result<()> {
 
 fn launch(config: &Config, app: &str, target: &str, matched: &str) -> Result<()> {
     let (program, args) = build_command_line(&config.apps[app], target);
-    let result = std::process::Command::new(&program).args(&args).spawn();
+    let mut cmd = std::process::Command::new(&program);
+    cmd.args(&args);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    let result = cmd.spawn();
     match result {
         Ok(_) => {
             logging::log_launch(target, matched, app, "ok");

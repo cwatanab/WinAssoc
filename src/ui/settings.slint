@@ -66,6 +66,7 @@ export component Settings inherits Window {
     in property <string> theme-mode: "system";
     in property <[string]> theme-modes: ["system", "light", "dark"];
     in property <[string]> result-lines: [];
+    in property <string> result-text: "";
     in property <bool> result-success: true;
 
     // 状態
@@ -265,6 +266,7 @@ export component Settings inherits Window {
                     theme-mode: root.theme-mode;
                     theme-modes: root.theme-modes;
                     result-lines: root.result-lines;
+                    result-text: root.result-text;
                     result-success: root.result-success;
                     update-picker-timeout(timeout) => { root.update-picker-timeout(timeout); }
                     update-theme-mode(mode) => { root.update-theme-mode(mode); }
