@@ -55,7 +55,7 @@ mod tests {
     }
     #[test] fn remove_returns_name_and_removes() {
         let mut apps = std::collections::BTreeMap::new();
-        apps.insert("a".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None });
+        apps.insert("a".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None, ..Default::default() });
         let state = AppsState::from_apps(&apps);
         assert_eq!(state.remove(0), Some("a".to_string()));
         assert_eq!(state.model.row_count(), 0);
@@ -63,7 +63,7 @@ mod tests {
     }
     #[test] fn update_replaces_entry() {
         let mut apps = std::collections::BTreeMap::new();
-        apps.insert("x".to_string(), AppDef { cmd: "old".into(), args: vec![], label: None });
+        apps.insert("x".to_string(), AppDef { cmd: "old".into(), args: vec![], label: None, ..Default::default() });
         let state = AppsState::from_apps(&apps);
         state.update(0, AppEntry { name: "x".into(), cmd: "new".into(), ..Default::default() });
         assert_eq!(state.entries.borrow().get("x").unwrap().cmd, "new");

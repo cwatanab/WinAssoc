@@ -52,6 +52,9 @@ pub struct AppDef {
     /// ピッカー等に表示する補足ラベル (例: "Profile 1")
     #[serde(default)]
     pub label: Option<String>,
+    /// カスタムアイコンのパス (ファイルパス、またはアイコンインデックス付きパス)
+    #[serde(default)]
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

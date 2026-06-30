@@ -14,19 +14,17 @@ export component TextField inherits Rectangle {
     border-width: 1px;
     border-color: root.error != "" ? Theme.current.system-critical : Theme.current.control-stroke;
     clip: true;
-    HorizontalLayout {
-        padding-left: Theme.spacing-m * 1px;
-        padding-right: Theme.spacing-m * 1px;
-        input := TextInput {
-            font-family: Theme.font-family;
-            font-size: 14px;
-            color: Theme.current.text-primary;
-            vertical-alignment: center;
-            single-line: true;
-            wrap: no-wrap;
-            horizontal-stretch: 1;
-            accepted => { root.accepted(self.text); }
-            edited => { root.edited(self.text); }
-        }
+    input := TextInput {
+        x: Theme.spacing-m * 1px;
+        width: parent.width - Theme.spacing-m * 2 * 1px;
+        height: 100%;
+        font-family: Theme.font-family;
+        font-size: 14px;
+        color: Theme.current.text-primary;
+        vertical-alignment: center;
+        single-line: true;
+        wrap: no-wrap;
+        accepted => { root.accepted(self.text); }
+        edited => { root.edited(self.text); }
     }
 }

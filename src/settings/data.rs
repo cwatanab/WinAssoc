@@ -27,8 +27,10 @@ pub struct AppEntry {
     pub name: String,
     pub cmd: String,
     pub args: Vec<String>,
+    pub args_str: String,
     pub label: String,
     pub icon: slint::Image,
+    pub icon_path: String,
     pub name_error: String,
     pub cmd_error: String,
 }
@@ -39,8 +41,10 @@ impl Default for AppEntry {
             name: String::new(),
             cmd: String::new(),
             args: Vec::new(),
+            args_str: String::new(),
             label: String::new(),
             icon: slint::Image::default(),
+            icon_path: String::new(),
             name_error: String::new(),
             cmd_error: String::new(),
         }
@@ -92,7 +96,9 @@ pub fn build_app_entries(apps: &std::collections::BTreeMap<String, crate::config
         name: name.clone(),
         cmd: def.cmd.clone(),
         args: def.args.clone(),
+        args_str: format_args(&def.args),
         label: def.label.clone().unwrap_or_default(),
+        icon_path: def.icon.clone().unwrap_or_default(),
         ..Default::default()
     }).collect()
 }
@@ -100,8 +106,9 @@ pub fn build_app_entries(apps: &std::collections::BTreeMap<String, crate::config
 pub fn app_entry_to_def(entry: &AppEntry) -> crate::config::AppDef {
     crate::config::AppDef {
         cmd: entry.cmd.clone(),
-        args: entry.args.clone(),
+        args: parse_args(&entry.args_str),
         label: if entry.label.is_empty() { None } else { Some(entry.label.clone()) },
+        icon: if entry.icon_path.is_empty() { None } else { Some(entry.icon_path.clone()) },
     }
 }
 
@@ -113,7 +120,14 @@ mod tests {
     use crate::config::AppDef;
 
     #[test] fn app_entry_round_trip() {
-        let entry = AppEntry { name: "test".into(), cmd: "C:\\bin\\app.exe".into(), args: vec!["--foo".into(), "{target}".into()], label: "Label".into(), ..Default::default() };
+        let entry = AppEntry {
+            name: "test".into(),
+            cmd: "C:\\bin\\app.exe".into(),
+            args: vec!["--foo".into(), "{target}".into()],
+            args_str: "--foo {target}".into(),
+            label: "Label".into(),
+            ..Default::default()
+        };
         let def = app_entry_to_def(&entry);
         assert_eq!(def.cmd, "C:\\bin\\app.exe");
         assert_eq!(def.args, vec!["--foo", "{target}"]);
@@ -175,8 +189,8 @@ mod tests {
     }
     #[test] fn build_app_entries_includes_label() {
         let mut apps = std::collections::BTreeMap::new();
-        apps.insert("x".to_string(), AppDef { cmd: "c.exe".into(), args: vec![], label: Some("X".into()) });
-        apps.insert("y".to_string(), AppDef { cmd: "d.exe".into(), args: vec!["{target}".into()], label: None });
+        apps.insert("x".to_string(), AppDef { cmd: "c.exe".into(), args: vec![], label: Some("X".into()), ..Default::default() });
+        apps.insert("y".to_string(), AppDef { cmd: "d.exe".into(), args: vec!["{target}".into()], label: None, ..Default::default() });
         let entries = build_app_entries(&apps);
         assert_eq!(entries.len(), 2);
         let x = entries.iter().find(|e| e.name == "x").unwrap();
@@ -185,4 +199,41 @@ mod tests {
         assert_eq!(y.label, "");
         assert_eq!(y.args, vec!["{target}"]);
     }
+}
+
+pub fn parse_args(s: &str) -> Vec<String> {
+    let mut args = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => {
+                in_quotes = !in_quotes;
+            }
+            ' ' if !in_quotes => {
+                if !current.is_empty() {
+                    args.push(current.clone());
+                    current.clear();
+                }
+            }
+            _ => {
+                current.push(c);
+            }
+        }
+    }
+    if !current.is_empty() {
+        args.push(current);
+    }
+    args
+}
+
+pub fn format_args(args: &[String]) -> String {
+    args.iter().map(|arg| {
+        if arg.contains(' ') || arg.is_empty() {
+            format!("\"{}\"", arg)
+        } else {
+            arg.clone()
+        }
+    }).collect::<Vec<_>>().join(" ")
 }

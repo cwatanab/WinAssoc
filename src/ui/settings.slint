@@ -41,6 +41,7 @@ export component Settings inherits Window {
 
     // 拡張子
     in property <[string]> app-names: [];
+    in property <[string]> action-names: [];
     in property <[string]> route-keys: [];
     in property <[string]> route-defaults: [];
     in property <[string]> candidates: [];
@@ -93,8 +94,9 @@ export component Settings inherits Window {
     callback add-app();
     callback delete-app(int);
     callback duplicate-app(int);
-    callback update-app(int, string, string, [string], string);
+    callback update-app(int, string, string, string, string, string);
     callback browse-app-cmd(int);
+    callback browse-app-icon(int);
 
     // コールバック (拡張子)
     callback add-route(string);
@@ -196,14 +198,16 @@ export component Settings inherits Window {
                     add-app => { root.add-app(); }
                     delete-app(idx) => { root.delete-app(idx); }
                     duplicate-app(idx) => { root.duplicate-app(idx); }
-                    update-app(idx, name, cmd, args, label) => { root.update-app(idx, name, cmd, args, label); }
+                    update-app(idx, name, cmd, args_str, icon_path, label) => { root.update-app(idx, name, cmd, args_str, icon_path, label); }
                     browse-cmd-clicked => { root.browse-app-cmd(root.selected-app); }
+                    browse-icon-clicked => { root.browse-app-icon(root.selected-app); }
                     save-clicked => { root.save-clicked(); }
                     apply-clicked => { root.apply-clicked(); }
                 }
                 
                 if (root.active-nav == 1) : ExtensionsPage {
                     app-names: root.app-names;
+                    action-names: root.action-names;
                     route-keys: root.route-keys;
                     route-icons: root.route-icons;
                     route-defaults: root.route-defaults;
@@ -233,6 +237,7 @@ export component Settings inherits Window {
                 
                 if (root.active-nav == 2) : ProtocolsPage {
                     app-names: root.app-names;
+                    action-names: root.action-names;
                     route-keys: root.proto-route-keys;
                     route-icons: root.proto-icons;
                     route-defaults: root.proto-defaults;

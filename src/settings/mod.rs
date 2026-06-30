@@ -65,8 +65,10 @@ fn to_slint_app(a: &data::AppEntry) -> crate::AppEntry {
         name: a.name.as_str().into(),
         cmd: a.cmd.as_str().into(),
         args: Rc::new(slint::VecModel::from(args)).into(),
+        args_str: a.args_str.as_str().into(),
         label: a.label.as_str().into(),
         icon: a.icon.clone(),
+        icon_path: a.icon_path.as_str().into(),
         name_error: a.name_error.as_str().into(),
         cmd_error: a.cmd_error.as_str().into(),
     }
@@ -163,16 +165,30 @@ pub fn run() -> Result<()> {
                 let slint_apps: Vec<crate::AppEntry> = apps_state_borrowed.model.iter().map(|a| to_slint_app(&a)).collect();
                 ui.set_apps(Rc::new(VecModel::from(slint_apps)).into());
                 
-                let app_icons: Vec<slint::Image> = apps_state_borrowed.model.iter().map(|e| get_app_icon(&e.cmd)).collect();
+                let app_icons: Vec<slint::Image> = apps_state_borrowed.model.iter().map(|e| {
+                    if !e.icon_path.is_empty() {
+                        get_app_icon(&e.icon_path)
+                    } else {
+                        get_app_icon(&e.cmd)
+                    }
+                }).collect();
                 ui.set_app_icons(Rc::new(VecModel::from(app_icons)).into());
                 let app_names: Vec<SharedString> = apps_state_borrowed.model.iter().map(|e| SharedString::from(e.name.clone())).collect();
-                ui.set_app_names(Rc::new(VecModel::from(app_names)).into());
+                ui.set_app_names(Rc::new(VecModel::from(app_names.clone())).into());
+                
+                let mut action_names = vec![SharedString::from("アプリ選択画面を表示 (Pick)")];
+                action_names.extend(app_names);
+                ui.set_action_names(Rc::new(VecModel::from(action_names)).into());
                 
                 let get_app_icon_by_name = |app_name: &str| -> slint::Image {
                     for i in 0..apps_state_borrowed.model.row_count() {
                         if let Some(app) = apps_state_borrowed.model.row_data(i) {
                             if app.name == app_name {
-                                return get_app_icon(&app.cmd);
+                                return if !app.icon_path.is_empty() {
+                                    get_app_icon(&app.icon_path)
+                                } else {
+                                    get_app_icon(&app.cmd)
+                                };
                             }
                         }
                     }
@@ -577,8 +593,10 @@ pub fn run() -> Result<()> {
                     name: dup_name,
                     cmd: original.cmd.clone(),
                     args: original.args.clone(),
+                    args_str: original.args_str.clone(),
                     label: original.label.clone(),
                     icon: original.icon.clone(),
+                    icon_path: original.icon_path.clone(),
                     name_error: String::new(),
                     cmd_error: String::new(),
                 });
@@ -593,13 +611,22 @@ pub fn run() -> Result<()> {
         let apps_state = apps_state.clone();
         let dirty = dirty.clone();
         let sync_ui = sync_ui.clone();
-        ui.on_update_app(move |idx, name, cmd, args, label| {
+        ui.on_update_app(move |idx, name, cmd, args_str, icon_path, label| {
+            let cmd_str = cmd.to_string();
+            let icon_path_str = icon_path.to_string();
+            let icon = if !icon_path_str.is_empty() {
+                get_app_icon(&icon_path_str)
+            } else {
+                get_app_icon(&cmd_str)
+            };
             let entry = data::AppEntry {
                 name: name.to_string(),
-                cmd: cmd.to_string(),
-                args: args.iter().map(|s| s.to_string()).collect(),
+                cmd: cmd_str,
+                args: data::parse_args(&args_str),
+                args_str: args_str.to_string(),
                 label: label.to_string(),
-                icon: get_app_icon(&cmd),
+                icon,
+                icon_path: icon_path_str,
                 name_error: String::new(),
                 cmd_error: String::new(),
             };
@@ -926,6 +953,28 @@ pub fn run() -> Result<()> {
                 if let Some(mut entry) = apps_state_borrowed.model.row_data(idx as usize) {
                     entry.cmd = path.clone();
                     entry.name = app_name;
+                    // If no custom icon path is set, update the active icon
+                    if entry.icon_path.is_empty() {
+                        entry.icon = get_app_icon(&path);
+                    }
+                    apps_state_borrowed.update(idx as usize, entry);
+                    dirty.set(true);
+                    drop(apps_state_borrowed);
+                    sync_ui();
+                }
+            }
+        });
+    }
+    
+    {
+        let apps_state = apps_state.clone();
+        let dirty = dirty.clone();
+        let sync_ui = sync_ui.clone();
+        ui.on_browse_app_icon(move |idx| {
+            if let Some(path) = select_executable_dialog() {
+                let apps_state_borrowed = apps_state.borrow();
+                if let Some(mut entry) = apps_state_borrowed.model.row_data(idx as usize) {
+                    entry.icon_path = path.clone();
                     entry.icon = get_app_icon(&path);
                     apps_state_borrowed.update(idx as usize, entry);
                     dirty.set(true);

@@ -6,6 +6,7 @@ import { TextField } from "text_field.slint";
 
 export component RuleRow inherits Rectangle {
     in property <[string]> app-names: [];
+    in property <[string]> action-names: [];
     in property <bool> show-glob: true;
     in property <bool> show-host: true;
     in property <bool> show-url: true;
@@ -21,14 +22,17 @@ export component RuleRow inherits Rectangle {
     callback delete();
     callback edited(string, string, string, string, string, bool);
 
-    height: 108px;
+    min-height: 96px;
     border-radius: Theme.radius-control * 1px;
     background: Theme.current.control-secondary;
     border-width: 1px;
     border-color: Theme.current.control-stroke;
 
     HorizontalLayout {
-        padding: Theme.spacing-m * 1px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        padding-left: Theme.spacing-m * 1px;
+        padding-right: Theme.spacing-m * 1px;
         spacing: Theme.spacing-m * 1px;
         
         VerticalLayout {
@@ -48,54 +52,65 @@ export component RuleRow inherits Rectangle {
                     width: 90px;
                 }
                 
-                if (root.show-glob) : HorizontalLayout {
-                    spacing: 4px;
+                VerticalLayout {
                     horizontal-stretch: 1;
-                    Text { text: "パス:"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
-                    TextField {
-                        placeholder: "**/*.md";
-                        value <=> root.glob;
-                        horizontal-stretch: 1;
-                        min-width: 80px;
-                        accepted(v) => { root.glob = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
-                    }
-                }
-                
-                if (root.show-host) : HorizontalLayout {
                     spacing: 4px;
-                    horizontal-stretch: 1;
-                    Text { text: "ホスト:"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
-                    TextField {
-                        placeholder: "*.example.com";
-                        value <=> root.host;
-                        horizontal-stretch: 1;
-                        min-width: 80px;
-                        accepted(v) => { root.host = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                    
+                    // 1行目: パス/ホスト ＋ キー
+                    HorizontalLayout {
+                        spacing: Theme.spacing-s * 1px;
+                        
+                        if (root.show-glob) : HorizontalLayout {
+                            spacing: 4px;
+                            horizontal-stretch: 1;
+                            Text { text: "パス:"; width: 40px; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                            TextField {
+                                placeholder: "**/*.md";
+                                value <=> root.glob;
+                                horizontal-stretch: 1;
+                                min-width: 80px;
+                                accepted(v) => { root.glob = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                            }
+                        }
+                        
+                        if (root.show-host) : HorizontalLayout {
+                            spacing: 4px;
+                            horizontal-stretch: 1;
+                            Text { text: "ホスト:"; width: 40px; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                            TextField {
+                                placeholder: "*.example.com";
+                                value <=> root.host;
+                                horizontal-stretch: 1;
+                                min-width: 80px;
+                                accepted(v) => { root.host = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                            }
+                        }
+                        
+                        if (root.show-modifier) : HorizontalLayout {
+                            spacing: 4px;
+                            horizontal-stretch: 0;
+                            Text { text: "キー:"; width: 40px; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                            ComboBox {
+                                model: ["", "SHIFT", "CTRL", "ALT"];
+                                current-value: root.modifier;
+                                width: 80px;
+                                selected(v) => { root.modifier = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                            }
+                        }
                     }
-                }
-                
-                if (root.show-url) : HorizontalLayout {
-                    spacing: 4px;
-                    horizontal-stretch: 1;
-                    Text { text: "URL:"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
-                    TextField {
-                        placeholder: "https://*";
-                        value <=> root.url;
+                    
+                    // 2行目: URL (プロトコル設定時のみ表示)
+                    if (root.show-url) : HorizontalLayout {
+                        spacing: 4px;
                         horizontal-stretch: 1;
-                        min-width: 120px;
-                        accepted(v) => { root.url = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
-                    }
-                }
-                
-                if (root.show-modifier) : HorizontalLayout {
-                    spacing: 4px;
-                    horizontal-stretch: 0;
-                    Text { text: "キー:"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
-                    ComboBox {
-                        model: ["", "SHIFT", "CTRL", "ALT"];
-                        current-value: root.modifier;
-                        width: 80px;
-                        selected(v) => { root.modifier = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                        Text { text: "URL:"; width: 40px; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
+                        TextField {
+                            placeholder: "https://*";
+                            value <=> root.url;
+                            horizontal-stretch: 1;
+                            min-width: 120px;
+                            accepted(v) => { root.url = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                        }
                     }
                 }
             }
@@ -115,26 +130,23 @@ export component RuleRow inherits Rectangle {
                     width: 90px;
                 }
                 
-                HorizontalLayout {
-                    spacing: Theme.spacing-m * 1px;
-                    
-                    CheckBox {
-                        label: "アプリ選択画面を表示 (Pick)";
-                        checked <=> root.pick;
-                        toggled(v) => { root.pick = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
-                    }
-                    
-                    if (!root.pick) : HorizontalLayout {
-                        spacing: Theme.spacing-s * 1px;
-                        Text { text: "または"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-tertiary; vertical-alignment: center; }
-                        ComboBox {
-                            model: root.app-names;
-                            current-value: root.app;
-                            horizontal-stretch: 1;
-                            min-width: 120px;
-                            max-width: 180px;
-                            selected(v) => { root.app = v; root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick); }
+                Rectangle {
+                    width: 36px;
+                }
+                
+                ComboBox {
+                    model: root.action-names;
+                    current-value: root.pick ? "アプリ選択画面を表示 (Pick)" : root.app;
+                    width: 240px;
+                    selected(v) => {
+                        if (v == "アプリ選択画面を表示 (Pick)") {
+                            root.pick = true;
+                            root.app = "";
+                        } else {
+                            root.pick = false;
+                            root.app = v;
                         }
+                        root.edited(root.glob, root.host, root.url, root.modifier, root.app, root.pick);
                     }
                 }
             }

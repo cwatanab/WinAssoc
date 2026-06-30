@@ -16,8 +16,9 @@ export component AppsPage inherits Rectangle {
     callback add-app();
     callback delete-app(int);
     callback duplicate-app(int);
-    callback update-app(int, string, string, [string], string);
+    callback update-app(int, string, string, string, string, string);
     callback browse-cmd-clicked();
+    callback browse-icon-clicked();
     callback save-clicked();
     callback apply-clicked();
 
@@ -138,13 +139,34 @@ export component AppsPage inherits Rectangle {
                             value: root.apps[root.selected].name;
                             error: root.apps[root.selected].name-error;
                             edited(v) => {
-                                root.update-app(root.selected, v, root.apps[root.selected].cmd, root.apps[root.selected].args, root.apps[root.selected].label);
+                                root.update-app(root.selected, v, root.apps[root.selected].cmd, root.apps[root.selected].args-str, root.apps[root.selected].icon-path, root.apps[root.selected].label);
                             }
                         }
                         if (root.apps[root.selected].name-error != "") : InfoBadge {
                             text: root.apps[root.selected].name-error;
                             kind: BadgeKind.critical;
                             width: 120px;
+                        }
+                    }
+                }
+                VerticalLayout {
+                    spacing: Theme.spacing-xs * 1px;
+                    Text { text: "カスタムアイコン (任意)"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-secondary; }
+                    HorizontalLayout {
+                        spacing: Theme.spacing-s * 1px;
+                        TextField {
+                            placeholder: "C:\\path\\to\\icon.ico (または exe, png 等)";
+                            value: root.apps[root.selected].icon-path;
+                            edited(v) => {
+                                root.update-app(root.selected, root.apps[root.selected].name, root.apps[root.selected].cmd, root.apps[root.selected].args-str, v, root.apps[root.selected].label);
+                            }
+                        }
+                        AccentButton {
+                            text: "...";
+                            width: 36px;
+                            clicked => {
+                                root.browse-icon-clicked();
+                            }
                         }
                     }
                 }
@@ -157,7 +179,7 @@ export component AppsPage inherits Rectangle {
                             value: root.apps[root.selected].cmd;
                             error: root.apps[root.selected].cmd-error;
                             edited(v) => {
-                                root.update-app(root.selected, root.apps[root.selected].name, v, root.apps[root.selected].args, root.apps[root.selected].label);
+                                root.update-app(root.selected, root.apps[root.selected].name, v, root.apps[root.selected].args-str, root.apps[root.selected].icon-path, root.apps[root.selected].label);
                             }
                         }
                         AccentButton {
@@ -171,17 +193,27 @@ export component AppsPage inherits Rectangle {
                 }
                 VerticalLayout {
                     spacing: Theme.spacing-xs * 1px;
+                    Text { text: "コマンドの引数 (任意)"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-secondary; }
+                    TextField {
+                        placeholder: "--some-flag {target}";
+                        value: root.apps[root.selected].args-str;
+                        edited(v) => {
+                            root.update-app(root.selected, root.apps[root.selected].name, root.apps[root.selected].cmd, v, root.apps[root.selected].icon-path, root.apps[root.selected].label);
+                        }
+                    }
+                }
+                VerticalLayout {
+                    spacing: Theme.spacing-xs * 1px;
                     Text { text: "説明 (任意)"; font-family: Theme.font-family; font-size: 12px; color: Theme.current.text-secondary; }
                     TextField {
                         value: root.apps[root.selected].label;
                         edited(v) => {
-                            root.update-app(root.selected, root.apps[root.selected].name, root.apps[root.selected].cmd, root.apps[root.selected].args, v);
+                            root.update-app(root.selected, root.apps[root.selected].name, root.apps[root.selected].cmd, root.apps[root.selected].args-str, root.apps[root.selected].icon-path, v);
                         }
                     }
                 }
                 HorizontalLayout {
                     spacing: Theme.spacing-s * 1px;
-                    alignment: start;
                     AccentButton { text: "適用"; primary: root.dirty; clicked => { root.apply-clicked(); } }
                 }
             }

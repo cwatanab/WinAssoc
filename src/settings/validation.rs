@@ -129,7 +129,7 @@ mod tests {
     }
     #[test] fn unknown_default_app_is_error() {
         let mut c = empty();
-        c.apps.insert("real".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None });
+        c.apps.insert("real".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None, ..Default::default() });
         let mut ext = BTreeMap::new();
         ext.insert(".md".to_string(), RouteTable { default: Some("ghost".into()), rules: vec![], candidates: None });
         c.ext = ext;
@@ -137,7 +137,7 @@ mod tests {
     }
     #[test] fn unknown_candidate_is_error() {
         let mut c = empty();
-        c.apps.insert("real".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None });
+        c.apps.insert("real".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None, ..Default::default() });
         let mut ext = BTreeMap::new();
         ext.insert(".md".to_string(), RouteTable { default: None, rules: vec![], candidates: Some(vec!["ghost".into()]) });
         c.ext = ext;
@@ -145,7 +145,7 @@ mod tests {
     }
     #[test] fn rule_with_pick_true_is_ok() {
         let mut c = empty();
-        c.apps.insert("real".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None });
+        c.apps.insert("real".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None, ..Default::default() });
         let mut ext = BTreeMap::new();
         ext.insert(".md".to_string(), RouteTable { default: None, rules: vec![Rule { pick: true, ..Default::default() }], candidates: None });
         c.ext = ext;
@@ -160,7 +160,7 @@ mod tests {
     }
     #[test] fn rule_with_unknown_app_is_error() {
         let mut c = empty();
-        c.apps.insert("real".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None });
+        c.apps.insert("real".to_string(), AppDef { cmd: "x".into(), args: vec![], label: None, ..Default::default() });
         let mut ext = BTreeMap::new();
         ext.insert(".md".to_string(), RouteTable { default: None, rules: vec![Rule { app: Some("ghost".into()), ..Default::default() }], candidates: None });
         c.ext = ext;

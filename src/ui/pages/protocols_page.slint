@@ -11,6 +11,7 @@ import { InfoBadge, BadgeKind } from "../components/info_badge.slint";
 
 export component ProtocolsPage inherits Rectangle {
     in property <[string]> app-names: [];
+    in property <[string]> action-names: [];
     in-out property <string> new-key: "";
     in property <[string]> route-keys: [];
     in property <[image]> route-icons: [];
@@ -344,7 +345,6 @@ export component ProtocolsPage inherits Rectangle {
                         // 保存・適用ボタン
                         HorizontalLayout {
                             spacing: Theme.spacing-s * 1px;
-                            alignment: start;
                             AccentButton { text: "保存"; primary: root.dirty; disabled: !root.dirty; clicked => { root.save-clicked(); } }
                             AccentButton { text: "適用"; clicked => { root.apply-clicked(); } }
                         }
@@ -402,6 +402,7 @@ export component ProtocolsPage inherits Rectangle {
                             spacing: Theme.spacing-s * 1px;
                             for rule[i] in root.rules: RuleRow {
                                 app-names: root.app-names;
+                                action-names: root.action-names;
                                 show-glob: false;
                                 show-host: true;
                                 show-url: true;
@@ -424,7 +425,6 @@ export component ProtocolsPage inherits Rectangle {
                         // 適用ボタン
                         HorizontalLayout {
                             spacing: Theme.spacing-s * 1px;
-                            alignment: start;
                             AccentButton { text: "適用"; primary: root.dirty; clicked => { root.apply-clicked(); } }
                         }
                     }
